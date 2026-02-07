@@ -6,14 +6,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบหลังบ้าน - Bangkok Spa Academy</title>
 
-    <link rel="stylesheet" href="assets/css/staff.css">
+    <link rel="stylesheet" href="assets/css/staff.css?v=<?= time() ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* CSS Badge เพิ่มเติม (Inline เพื่อความชัวร์เรื่อง Cache) */
+        .sidebar-notification-badge {
+            background-color: #ff4d4d; /* สีแดงสว่าง */
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            padding: 2px 6px;
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.4);
+            animation: pulse-red 2s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 6px rgba(255, 77, 77, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 77, 77, 0);
+            }
+        }
+    </style>
 </head>
 
 <body>
     <?php
     // รับค่า action ปัจจุบัน ถ้าไม่มีให้เป็นค่าว่าง (เพื่อป้องกัน Error)
     $act = $_GET['action'] ?? '';
+
+    // [ADD] Query Pending Counts for Badges
+    $badge_bookings = 0;
+    $badge_refunds = 0;
+    if (isset($pdo)) {
+        try {
+             $badge_bookings = $pdo->query("SELECT COUNT(*) FROM booking WHERE status = 'Pending'")->fetchColumn();
+             $badge_refunds = $pdo->query("SELECT COUNT(*) FROM booking WHERE status = 'RefundPending'")->fetchColumn();
+        } catch (Exception $e) {}
+    }
     ?>
 
     <div class="staff-wrapper">
@@ -45,13 +87,24 @@
                     </a>
                 </li>
                 <li>
-                    <a href="index.php?action=staff_booking_list" class="<?= ($act == 'staff_booking_list' || $act == 'staff_booking_detail') ? 'active' : '' ?>">
-                        <i class="fas fa-calendar-check"></i> รายการจอง
+                    <a href="index.php?action=staff_pos" class="<?= ($act == 'staff_pos') ? 'active' : '' ?>">
+                        <i class="fas fa-cash-register"></i> ขายหน้าร้าน 
                     </a>
                 </li>
                 <li>
-                    <a href="index.php?action=staff_refund_list" class="<?= ($act == 'staff_refund_list' || $act == 'staff_refund_history') ? 'active' : '' ?>">
-                        <i class="fas fa-file-invoice-dollar"></i> จัดการขอคืนเงิน
+                    <a href="index.php?action=staff_booking_list" class="<?= ($act == 'staff_booking_list' || $act == 'staff_booking_detail') ? 'active' : '' ?>" style="display: flex; align-items: center;">
+                        <i class="fas fa-calendar-check"></i> <span style="flex:1;">รายการจอง</span>
+                        <?php if($badge_bookings > 0): ?>
+                            <span class="sidebar-notification-badge"><?= $badge_bookings ?></span>
+                        <?php endif; ?>
+                    </a>
+                </li>
+                <li>
+                    <a href="index.php?action=staff_refund_list" class="<?= ($act == 'staff_refund_list' || $act == 'staff_refund_history') ? 'active' : '' ?>" style="display: flex; align-items: center;">
+                        <i class="fas fa-file-invoice-dollar"></i> <span style="flex:1;">จัดการขอคืนเงิน</span>
+                        <?php if($badge_refunds > 0): ?>
+                            <span class="sidebar-notification-badge"><?= $badge_refunds ?></span>
+                        <?php endif; ?>
                     </a>
                 </li>
                 <li>
@@ -92,7 +145,16 @@
         </main>
     </div>
 
-  
+    <script>
+        // Start Background Mail Worker
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                fetch('process_mail_queue.php')
+                    .then(r => r.json())
+                    .then(d => { if(d.processed > 0) console.log('Mail sent:', d.processed); })
+                    .catch(e => console.warn('Mail worker silent fail'));
+            }, 2000);
+        });
+    </script>
 </body>
-
 </html>

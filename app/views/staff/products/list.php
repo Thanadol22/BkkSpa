@@ -76,13 +76,7 @@
                                     <i class="fas fa-plus-circle" style="color: var(--primary-green);"></i>
                                 </button>
 
-                                <button type="button" 
-                                        class="btn-icon" 
-                                        title="ขาย/ตัดสต็อก"
-                                        onclick="openStockModal(<?= $p['product_id'] ?>, 'sell', '<?= htmlspecialchars($p['name']) ?>')">
-                                    <i class="fas fa-minus-circle" style="color: #e67e22;"></i>
-                                </button>
-
+                               
                                 <a href="index.php?action=staff_product_edit&id=<?= $p['product_id'] ?>" 
                                    class="btn-icon" title="แก้ไข">
                                     <i class="fas fa-edit" style="color: #FFC107;"></i>

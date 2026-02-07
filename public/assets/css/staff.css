@@ -2413,3 +2413,141 @@ a.link-action,
         grid-template-columns: 1fr;
     }
 }
+/* ==========================================================================
+   ATTENDANCE REPORT / PRINT STYLES
+   ========================================================================== */
+.print-layout {
+    font-family: 'Kanit', sans-serif;
+    background: #fff !important;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+    font-size: 14px;
+}
+
+.print-layout .header {
+    text-align: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 20px;
+}
+
+.print-layout .logo {
+    font-weight: 700;
+    font-size: 24px;
+    color: #2c7be5;
+    margin-bottom: 5px;
+}
+
+.print-layout .report-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.print-layout .info-table {
+    width: 100%;
+    margin-bottom: 20px;
+    border-collapse: collapse;
+}
+
+.print-layout .info-table td {
+    padding: 5px;
+    vertical-align: top;
+}
+
+.print-layout .info-label {
+    font-weight: 600;
+    color: #666;
+    width: 120px;
+}
+
+.print-layout .attendance-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.print-layout .attendance-table th,
+.print-layout .attendance-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+}
+
+.print-layout .attendance-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+
+.print-layout .text-left {
+    text-align: left !important;
+}
+
+.print-layout .status-present {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.print-layout .status-absent {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.print-layout .status-none {
+    color: #adb5bd;
+}
+
+.print-layout .summary-box {
+    margin-top: 20px;
+    text-align: right;
+    font-weight: 600;
+}
+
+.print-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #2c7be5;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'Kanit', sans-serif;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.print-btn:hover {
+    background: #1a5cbe;
+}
+
+@media print {
+    .print-btn {
+        display: none;
+    }
+
+    body.print-layout {
+        padding: 0;
+        background: #fff !important;
+    }
+}
+
+/* Sidebar Notification Badge */
+.sidebar-notification-badge {
+    background-color: #dc3545;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto; /* Push to right */
+    padding: 0 5px;
+    line-height: normal;
+}

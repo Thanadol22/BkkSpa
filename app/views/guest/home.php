@@ -38,64 +38,85 @@ $ratingStats = $stmtStats->fetch(PDO::FETCH_ASSOC);
     <div class="container">
         <div class="highlights-grid">
             <div class="highlight-item">
-                <div class="highlight-circle">
-                    <img src="assets/images/logo/Massage.png" alt="Icon">
-                    <p>สอนกลุ่มเล็ก นวดเป็นแน่นอนผู้สอนมีประสบการณ์<br>เกิน 10 ปี</p>
+                <div class="highlight-icon">
+                    <img src="assets/images/logo/Massage.png" alt="Services">
                 </div>
+
+                <p class="highlight-desc">สอนกลุ่มเล็ก นวดเป็นแน่นอนผู้สอนมีประสบการณ์เกิน 10 ปี</p>
             </div>
             <div class="highlight-item">
-                <div class="highlight-circle">
-                    <img src="assets/images/logo/Aroma.png" alt="Icon">
-                    <p>เรียนจบแล้วสามารถกลับมา ทบทวนซ้ำฟรี</p>
+                <div class="highlight-icon">
+                    <img src="assets/images/logo/Aroma.png" alt="Treatments">
                 </div>
+
+                <p class="highlight-desc">เรียนจบแล้วสามารถกลับมา ทบทวนซ้ำฟรี</p>
             </div>
             <div class="highlight-item">
-                <div class="highlight-circle">
-                    <img src="assets/images/logo/Calender.png" alt="Icon">
-                    <p>ใบประกาศนียบัตรรับรองหลักสูตร</p>
+                <div class="highlight-icon">
+                    <img src="assets/images/logo/Calender.png" alt="Memberships">
                 </div>
+
+                <p class="highlight-desc">ใบประกาศนียบัตรรับรองหลักสูตร</p>
             </div>
         </div>
-        <a href="#" class="btn-cta-orange">สมัครเรียน!!</a>
+       
     </div>
 </section>
 
 <section class="courses-section">
     <div class="container">
-        <h2 class="section-title">หลักสูตรที่เปิดสอน</h2>
-        <div class="courses-grid">
-            <div class="course-item">
-                <div class="course-img"><img src="assets/images/courses/allcourse-1.png" alt="Health"></div>
-                <p class="course-name">สปาเพื่อสุขภาพ</p>
+
+        <!-- Item 1: สปาเพื่อสุขภาพ -->
+        <div class="feature-item">
+            <div class="feature-img-box">
+                <img src="assets/images/courses/allcourse-1.png" alt="สปาเพื่อสุขภาพ">
             </div>
-            <div class="course-item">
-                <div class="course-img"><img src="assets/images/courses/allcourse-6.png" alt="Beauty"></div>
-                <p class="course-name">สปาเพื่อความงาม</p>
-            </div>
-            <div class="course-item">
-                <div class="course-img"><img src="assets/images/courses/allcourse-9.png" alt="Advanced"></div>
-                <p class="course-name">สปาขั้นสูง</p>
+            <div class="feature-content">
+                <div class="feature-icon"><i class="far fa-heart"></i></div>
+                <h3 class="feature-title">สปาเพื่อสุขภาพ</h3>
+                <p class="feature-desc">
+                    เน้นการนวดแผนไทยและการยืดกล้ามเนื้อเพื่อฟื้นฟูร่างกายลดอาการปวดเมื่อยเหมาะสำหรับผู้ที่ต้องการส่งเสริมสุขภาพโดยรวม
+                </p>
+                <a href="index.php?action=courses&category=สปาเพื่อสุขภาพ" class="btn-cta-orange btn-small">สมัคร</a>
             </div>
         </div>
+
+        <!-- Item 2: สปาเพื่อความงาม (สลับฝั่ง) -->
+        <div class="feature-item reverse">
+            <div class="feature-img-box">
+                <img src="assets/images/courses/allcourse-6.png" alt="สปาเพื่อความงาม">
+               
+            </div>
+            <div class="feature-content">
+                <div class="feature-icon"><i class="far fa-gem"></i></div>
+                <h3 class="feature-title">สปาเพื่อความงาม</h3>
+                <p class="feature-desc">
+                    มุ่งเน้นการดูแลผิวพรรณ เช่น นวดหน้า พอกหน้าและเทคนิคเพื่อความงามต่างๆเหมาะกับสายงานเสริมสวยและดูแลผิว
+                </p>
+                <a href="index.php?action=courses&category=สปาเพื่อความงาม" class="btn-cta-orange btn-small">สมัคร</a>
+            </div>
+        </div>
+
+        <!-- Item 3: สปาขั้นสูง -->
+        <div class="feature-item">
+            <div class="feature-img-box">
+                <img src="assets/images/courses/allcourse-9.png" alt="สปาขั้นสูง">
+            </div>
+            <div class="feature-content">
+                <div class="feature-icon"><i class="fas fa-certificate"></i></div>
+                <h3 class="feature-title">สปาขั้นสูง</h3>
+                <p class="feature-desc">
+                    รวมเทคนิคพิเศษ เช่น การครอบแก้ว การใช้หินร้อนและการนวดเฉพาะทางเหมาะ
+                    สำหรับผู้มีพื้นฐานและต้องการยกระดับทักษะ
+                </p>
+                <a href="index.php?action=courses&category=สปาขั้นสูง" class="btn-cta-orange btn-small">สมัคร</a>
+            </div>
+        </div>
+
     </div>
 </section>
 
-<section class="online-course-section">
-    <div class="online-content">
-        <h2 class="online-header">Online Course</h2>
-        <h3 class="online-sub">หลักสูตรการนวดด้วยน้ำมันหอมระเหย</h3>
-        <div class="online-features-grid">
-            <div class="feature-item"><i class="fas fa-check-circle"></i> เรียนซ้ำได้ตลอดชีพ</div>
-            <div class="feature-item"><i class="fas fa-check-circle"></i> สอนทุกขั้นตอนอย่างละเอียด</div>
-            <div class="feature-item"><i class="fas fa-check-circle"></i> ภาพคมชัด ระดับ HD</div>
-            <div class="feature-item"><i class="fas fa-check-circle"></i> มีใบประกาศนียบัตร</div>
-        </div>
-        <a href="#" class="btn-cta-orange btn-small">สมัครเรียนออนไลน์คลิก!</a>
-    </div>
-    <div class="online-image">
-        <img src="assets/images/courses/image.png" alt="Online">
-    </div>
-</section>
+
 
 
 <section class="reviews-section">
@@ -106,7 +127,7 @@ $ratingStats = $stmtStats->fetch(PDO::FETCH_ASSOC);
         </div>
 
         <?php if (!empty($ratingStats) && $ratingStats['total_reviews'] > 0): ?>
-            <?php endif; ?>
+        <?php endif; ?>
 
         <button class="nav-btn nav-prev" onclick="scrollReview(-1)"><i class="fas fa-chevron-left"></i></button>
         <button class="nav-btn nav-next" onclick="scrollReview(1)"><i class="fas fa-chevron-right"></i></button>
@@ -120,7 +141,7 @@ $ratingStats = $stmtStats->fetch(PDO::FETCH_ASSOC);
                 <?php foreach ($reviews as $row): ?>
                     <div class="review-card">
                         <div class="quote-icon">❞</div>
-                        
+
                         <div class="review-header">
                             <div class="review-avatar">
                                 <i class="far fa-user"></i>
@@ -152,7 +173,7 @@ $ratingStats = $stmtStats->fetch(PDO::FETCH_ASSOC);
             <?php endif; ?>
         </div>
 
-      
+
 
     </div>
 </section>
@@ -161,6 +182,9 @@ $ratingStats = $stmtStats->fetch(PDO::FETCH_ASSOC);
     function scrollReview(direction) {
         const container = document.getElementById('reviewContainer');
         const scrollAmount = 370; // ความกว้างการ์ด + gap
-        container.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+        container.scrollBy({
+            left: direction * scrollAmount,
+            behavior: 'smooth'
+        });
     }
 </script>

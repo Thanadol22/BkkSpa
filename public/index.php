@@ -12,6 +12,23 @@ date_default_timezone_set('Asia/Bangkok');
 // 1. ตั้งค่า Path และเชื่อมต่อฐานข้อมูล
 // ---------------------------------------------------
 define('BASE_PATH', dirname(__DIR__));
+
+// Load .env keys
+if (file_exists(BASE_PATH . '/.env')) {
+    $lines = file(BASE_PATH . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        if (strpos($line, '=') !== false) {
+            list($name, $value) = explode('=', $line, 2);
+            $name = trim($name);
+            $value = trim($value);
+            $value = trim($value, '"\''); // Remove quotes
+            $_ENV[$name] = $value;
+            putenv("$name=$value");
+        }
+    }
+}
+
 define('APP_PATH', BASE_PATH . '/app');
 define('VIEW_PATH', APP_PATH . '/views');
 require APP_PATH . '/config/database.php';
@@ -64,8 +81,21 @@ if ($action === 'doLogin') {
             $stmt->execute(['u' => $username]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            // 2. ตรวจสอบรหัสผ่านแบบ Plain Text (เปรียบเทียบตรงๆ)
-            if ($user && $user['password'] === $password) {
+            // 2. ตรวจสอบรหัสผ่าน (รองรับทั้ง Hash และ Plain Text เพื่อ Migration)
+            $isPasswordCorrect = false;
+            if ($user) {
+                if (password_verify($password, $user['password'])) {
+                    $isPasswordCorrect = true;
+                } elseif ($user['password'] === $password) {
+                    // ถ้ายังเป็น Plain Text ให้ผ่าน แล้ว Hash เก็บลง DB ทันที
+                    $isPasswordCorrect = true;
+                    $newHash = password_hash($password, PASSWORD_DEFAULT);
+                    $upd = $pdo->prepare("UPDATE user SET password = ? WHERE user_id = ?");
+                    $upd->execute([$newHash, $user['user_id']]);
+                }
+            }
+
+            if ($isPasswordCorrect) {
 
                 // 3. ตรวจสอบสถานะ Active (ถ้าเป็น 0 ห้ามเข้า)
                 if ($user['is_active'] == 0) {
@@ -146,7 +176,10 @@ if ($action === 'doRegister' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             VALUES (3, ?, ?, ?, ?, ?, ?, ?)";
 
     try {
-        $pdo->prepare($sql)->execute([$full_name, $phone, $bank_name, $bank_acc, $email, $username, $password]);
+        // Hash Password ก่อนบันทึก
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        $pdo->prepare($sql)->execute([$full_name, $phone, $bank_name, $bank_acc, $email, $username, $hashed_password]);
+        
         $_SESSION['success'] = "สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ";
         header('Location: index.php?action=login');
         exit;
@@ -169,13 +202,24 @@ if ($action === 'doResetPassword' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->execute(['u' => $username]);
     $user = $stmt->fetch();
 
-    if (!$user || $user['password'] !== $current_pass) {
+    $isCurrentPassCorrect = false;
+    if ($user) {
+        if (password_verify($current_pass, $user['password'])) {
+            $isCurrentPassCorrect = true;
+        } elseif ($user['password'] === $current_pass) {
+            $isCurrentPassCorrect = true;
+        }
+    }
+
+    if (!$isCurrentPassCorrect) {
         $_SESSION['error'] = "ข้อมูลไม่ถูกต้อง (ชื่อผู้ใช้งานหรือรหัสผ่านเดิมผิด)";
         header('Location: index.php?action=resetPassword');
         exit;
     }
 
-    $pdo->prepare("UPDATE user SET password = ? WHERE user_id = ?")->execute([$new_pass, $user['user_id']]);
+    // Hash New Password
+    $new_hash = password_hash($new_pass, PASSWORD_DEFAULT);
+    $pdo->prepare("UPDATE user SET password = ? WHERE user_id = ?")->execute([$new_hash, $user['user_id']]);
     $_SESSION['success'] = "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว กรุณาเข้าสู่ระบบใหม่";
     header('Location: index.php?action=login');
 
@@ -406,10 +450,13 @@ switch ($action) {
         $booking_id = $_POST['booking_id'];
         $user_id = $_SESSION['user_id'];
 
-        // 1. ดึงข้อมูลการจอง + ข้อมูลบัญชีผู้เรียน
-        $sql = "SELECT b.*, u.bank_name, u.bank_account, u.full_name, u.email 
+        // 1. ดึงข้อมูลการจอง + ข้อมูลบัญชีผู้เรียน + ข้อมูลคอร์ส
+        $sql = "SELECT b.*, u.bank_name, u.bank_account, u.full_name, u.email, 
+                       c.name as course_name, c.price as original_price, c.course_id 
                 FROM booking b 
                 JOIN user u ON b.user_id = u.user_id 
+                JOIN course_schedule s ON b.schedule_id = s.schedule_id
+                JOIN course c ON s.course_id = c.course_id
                 WHERE b.booking_id = :bid";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['bid' => $booking_id]);
@@ -452,12 +499,27 @@ switch ($action) {
                 'bid' => $booking_id
             ]);
 
+            // คำนวณยอดเงินที่คืน (Net Amount)
+            $net_refund_amount = $booking['original_price'];
+            if (isset($booking['course_id'])) {
+                require_once APP_PATH . '/models/Promotion.php';
+                $promoModel = new Promotion($pdo);
+                $activePromo = $promoModel->getPromotionAtDate($booking['course_id'], $booking['booked_at']);
+                if ($activePromo) {
+                   $discountVal = ($booking['original_price'] * $activePromo['discount']) / 100;
+                   $net_refund_amount = $booking['original_price'] - $discountVal;
+                }
+            }
+            $refund_amount_text = number_format($net_refund_amount, 2);
+
             // 3. เตรียมเนื้อหาอีเมล
             $subject = "แจ้งเตือน: คำขอคืนเงินใหม่ (Booking #$booking_id)";
             $bodyHtml = "
                 <h3>มีการขอยกเลิกคอร์สและขอคืนเงิน</h3>
                 <p><strong>รหัสการจอง:</strong> #$booking_id</p>
                 <p><strong>ผู้เรียน:</strong> {$booking['full_name']}</p>
+                <p><strong>หลักสูตร:</strong> {$booking['course_name']}</p>
+                <p><strong>ยอดเงินที่ต้องคืน:</strong> {$refund_amount_text} บาท</p>
                 <p><strong>วันเวลาที่แจ้ง:</strong> " . date('d/m/Y H:i') . "</p>
                 <hr>
                 <p><strong>ข้อมูลสำหรับโอนคืน:</strong></p>
@@ -557,7 +619,7 @@ switch ($action) {
             $stmt->execute(['slip' => $slipPath, 'bid' => $booking_id]);
 
             // --- 3. ดึงข้อมูลผู้เรียน (เพื่อส่งเมลแจ้งเตือน) ---
-            $sqlInfo = "SELECT b.*, u.email, u.full_name, c.name as course_name
+            $sqlInfo = "SELECT b.*, u.email, u.full_name, c.name as course_name, c.price as original_price, c.course_id
                         FROM booking b
                         JOIN user u ON b.user_id = u.user_id
                         JOIN course_schedule s ON b.schedule_id = s.schedule_id
@@ -566,6 +628,19 @@ switch ($action) {
             $stmtInfo = $pdo->prepare($sqlInfo);
             $stmtInfo->execute(['bid' => $booking_id]);
             $info = $stmtInfo->fetch(PDO::FETCH_ASSOC);
+
+            // คำนวณยอดเงินที่คืนจริง (Check Promotion)
+            $net_refund_amount = $info['original_price'];
+            if (isset($info['course_id'])) {
+                require_once APP_PATH . '/models/Promotion.php';
+                $promoModel = new Promotion($pdo);
+                $activePromo = $promoModel->getPromotionAtDate($info['course_id'], $info['booked_at']);
+                if ($activePromo) {
+                   $discountVal = ($info['original_price'] * $activePromo['discount']) / 100;
+                   $net_refund_amount = $info['original_price'] - $discountVal;
+                }
+            }
+            $refund_amount_text = number_format($net_refund_amount, 2);
 
             $pdo->commit();
 
@@ -576,6 +651,7 @@ switch ($action) {
                     <h3 style='color: #28a745;'>การขอคืนเงินของท่านได้รับการอนุมัติแล้ว</h3>
                     <p>เรียนคุณ {$info['full_name']},</p>
                     <p>ทางสถาบันได้ทำการโอนเงินคืนสำหรับคอร์ส <strong>{$info['course_name']}</strong> เรียบร้อยแล้ว</p>
+                    <p><strong>จำนวนเงิน:</strong> {$refund_amount_text} บาท</p>
                     <p><strong>วันที่โอน:</strong> " . date('d/m/Y H:i') . "</p>
                     <hr>
                     <p><strong>หลักฐานการโอนเงิน:</strong></p>
@@ -603,8 +679,8 @@ switch ($action) {
             exit;
         }
 
-        // ดึงรายการรอคืนเงิน
-        $sql = "SELECT b.*, u.full_name, c.name as course_name 
+        // ดึงรายการรอคืนเงิน (เพิ่ม c.price, c.course_id)
+        $sql = "SELECT b.*, u.full_name, c.name as course_name, c.course_id, c.price as original_price 
                 FROM booking b 
                 JOIN user u ON b.user_id = u.user_id 
                 JOIN course_schedule s ON b.schedule_id = s.schedule_id
@@ -613,6 +689,30 @@ switch ($action) {
                 ORDER BY b.booked_at ASC";
         $stmt = $pdo->query($sql);
         $refunds = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // คำนวณราคาสุทธิ (หักส่วนลด)
+        require_once APP_PATH . '/models/Promotion.php';
+        $promoModel = new Promotion($pdo);
+
+        foreach ($refunds as &$row) {
+            $bookingDate = $row['booked_at'];
+            $courseId = $row['course_id'];
+            
+            // หาโปรโมชั่น ณ วันที่จอง
+            $activePromo = $promoModel->getPromotionAtDate($courseId, $bookingDate);
+            
+            // ค่าเริ่มต้น
+            $row['discount_percent'] = 0;
+            $row['discount_amount'] = 0;
+            $row['net_price'] = $row['original_price'];
+
+            if ($activePromo) {
+                $row['discount_percent'] = intval($activePromo['discount']);
+                $row['discount_amount'] = ($row['original_price'] * $activePromo['discount']) / 100;
+                $row['net_price'] = $row['original_price'] - $row['discount_amount'];
+            }
+        }
+        unset($row); // ป้องกันบั๊ก loop reference
 
         // กำหนดชื่อหน้า
         $title = "จัดการรายการขอคืนเงิน - Staff Panel";
@@ -749,14 +849,28 @@ switch ($action) {
         try {
             $pdo->beginTransaction();
 
-            // ตรวจสอบ Capacity (ใช้ $schedule_id ที่ถูกแปลงแล้ว)
-            $stmt = $pdo->prepare("SELECT capacity FROM course_schedule WHERE schedule_id = ?");
+            // ตรวจสอบ Capacity และดึง course_id ที่ถูกต้อง
+            $stmt = $pdo->prepare("SELECT capacity, course_id FROM course_schedule WHERE schedule_id = ?");
             $stmt->execute([$schedule_id]);
             $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
 
             // [ตรวจสอบอีกครั้ง] ถ้า capacity เป็น 0 หรือ schedule ไม่พบ
             if (!$schedule || $schedule['capacity'] <= 0) {
                 throw new Exception("ขออภัย ที่นั่งเต็มแล้ว หรือไม่พบรอบเรียนนี้");
+            }
+
+            // [เพิ่ม] ตรวจสอบการสมัครซ้ำ (Duplicate Booking Check)
+            // อนุญาตให้สมัครใหม่ได้เฉพาะกรณีสถานะเป็น Rejected หรือ Cancelled เท่านั้น
+            $chkBooking = $pdo->prepare("SELECT b.status FROM booking b 
+                                         JOIN course_schedule s ON b.schedule_id = s.schedule_id 
+                                         WHERE b.user_id = ? AND s.course_id = ? 
+                                         AND b.status NOT IN ('Rejected', 'Cancelled') 
+                                         LIMIT 1");
+            $chkBooking->execute([$user_id, $schedule['course_id']]);
+            $existing = $chkBooking->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing) {
+                throw new Exception("คุณได้สมัครหลักสูตรนี้ไปแล้ว (สถานะ: " . $existing['status'] . ") สามารถสมัครใหม่ได้เมื่อถูกปฏิเสธหรือยกเลิกเท่านั้น");
             }
 
             // Support multiple slip images (1-3)
@@ -1377,6 +1491,29 @@ switch ($action) {
         try {
             $bookingDetail = $bookingModel->getBookingFullDetails($booking_id);
 
+            // [START Logic คำนวณส่วนลดสำหรับหน้า Staff]
+            require_once APP_PATH . '/models/Promotion.php';
+            $promoModel = new Promotion($pdo);
+            $bookingDate = $bookingDetail['booked_at'] ?? date('Y-m-d H:i:s');
+            
+            // ตรวจสอบว่ามี course_id หรือไม่ (กัน Error)
+            if (isset($bookingDetail['course_id'])) {
+                $activePromo = $promoModel->getPromotionAtDate($bookingDetail['course_id'], $bookingDate);
+            } else {
+                $activePromo = false;
+            }
+            
+            $bookingDetail['original_price'] = $bookingDetail['price'];
+            $bookingDetail['discount_percent'] = 0;
+            $bookingDetail['final_price'] = $bookingDetail['price'];
+            
+            if ($activePromo) {
+                $bookingDetail['discount_percent'] = intval($activePromo['discount']);
+                $discountVal = ($bookingDetail['original_price'] * $activePromo['discount']) / 100;
+                $bookingDetail['final_price'] = $bookingDetail['original_price'] - $discountVal;
+            }
+            // [END Logic]
+
             if (!$bookingDetail) {
                 echo "<script>alert('ไม่พบรายการจองนี้'); window.location='index.php?action=staff_booking_list';</script>";
                 exit;
@@ -1427,8 +1564,8 @@ switch ($action) {
 
                 // --- เริ่มส่วนส่งอีเมลหาลูกค้า ---
                 // 1. ดึงข้อมูลลูกค้าและการจอง
-                $sqlInfo = "SELECT u.email, u.full_name, c.name as course_name, 
-                                   cs.start_at, cs.end_at, b.booking_id, c.price as paid_amount
+                $sqlInfo = "SELECT u.email, u.full_name, c.course_id, c.name as course_name, 
+                                   cs.start_at, cs.end_at, b.booking_id, b.booked_at, c.price as paid_amount
                             FROM booking b
                             JOIN user u ON b.user_id = u.user_id
                             JOIN course_schedule cs ON b.schedule_id = cs.schedule_id
@@ -1454,6 +1591,29 @@ switch ($action) {
                         // (ต้องมีฟังก์ชัน createReceipt ใน Booking Model)
                         $receiptNo = $bookingModel->createReceipt($booking_id);
 
+                        // [Fix] คำนวณส่วนลดตามโปรโมชั่น (เช็คจากวันที่จอง booked_at)
+                        require_once APP_PATH . '/models/Promotion.php';
+                        $promoModel = new Promotion($pdo);
+                        // ถ้าไม่มี booked_at ให้ใช้ NOW() แทน
+                        $bookingDate = $info['booked_at'] ?? date('Y-m-d H:i:s');
+                        $activePromo = $promoModel->getPromotionAtDate($info['course_id'], $bookingDate);
+                        
+                        $originalPrice = $info['paid_amount'];
+                        $discountVal = 0;
+                        $finalPrice = $originalPrice;
+                        $discountRow = "";
+
+                        if ($activePromo) {
+                            $discountVal = ($originalPrice * $activePromo['discount']) / 100;
+                            $finalPrice = $originalPrice - $discountVal;
+                            
+                            $discountRow = '
+                            <tr>
+                                <td style="padding: 10px; border-bottom: 1px solid #ddd;">ส่วนลด (' . intval($activePromo['discount']) . '%)</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right; color: red;">-' . number_format($discountVal, 2) . '</td>
+                            </tr>';
+                        }
+                        
                         $subject = "✅ การจองสำเร็จและใบเสร็จรับเงิน - " . $info['course_name'];
 
                         // 2. สร้าง HTML เนื้อหาอีเมล พร้อมใบเสร็จในตัว
@@ -1482,11 +1642,12 @@ switch ($action) {
                                         </tr>
                                         <tr>
                                             <td style="padding: 10px; border-bottom: 1px solid #ddd;">' . $info['course_name'] . '</td>
-                                            <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">' . number_format($info['paid_amount'], 2) . '</td>
+                                            <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">' . number_format($originalPrice, 2) . '</td>
                                         </tr>
+                                        ' . $discountRow . '
                                         <tr>
                                             <td style="padding: 10px; text-align: right;"><strong>รวมสุทธิ</strong></td>
-                                            <td style="padding: 10px; text-align: right; color: #4CAF50;"><strong>' . number_format($info['paid_amount'], 2) . ' บาท</strong></td>
+                                            <td style="padding: 10px; text-align: right; color: #4CAF50;"><strong>' . number_format($finalPrice, 2) . ' บาท</strong></td>
                                         </tr>
                                     </table>
                                 </div>
@@ -1558,6 +1719,26 @@ switch ($action) {
         exit;
         break;
 
+    // Report ประวัติการเข้าเรียน (PDF/Print)
+    case 'staff_schedule_history':
+        require_once APP_PATH . '/models/Attendance.php';
+        $attendModel = new Attendance($pdo);
+        $schedule_id = $_GET['id'] ?? 0;
+
+        $reportData = $attendModel->getAttendanceReport($schedule_id);
+
+        if (!$reportData) {
+            echo "<script>alert('ไม่พบข้อมูลรอบเรียน'); window.history.back();</script>";
+            exit;
+        }
+
+        // ถ้าต้องการ Print PDF
+        // เราจะใช้ View ที่ออกแบบมาสำหรับ Print โดยเฉพาะ
+        // ไม่โหลด Layout หลัก
+        require_once VIEW_PATH . '/staff/attendance/history.php';
+        exit;
+        break;
+
     // บันทึกข้อมูล (Save)
     case 'staff_attendance_save':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -1573,7 +1754,7 @@ switch ($action) {
             $attendModel->saveAttendance($schedule_id, $present_users, $_SESSION['user_id'], $attendance_date);
 
             // กลับไปหน้าเดิม
-            header("Location: index.php?action=staff_attendance_checkin&date=$redirect_date");
+            header("Location: index.php?action=staff_attendance_checkin&date=$redirect_date&status=success");
             exit;
         }
         break;
@@ -1981,17 +2162,25 @@ switch ($action) {
                 move_uploaded_file($_FILES["promotion_picture"]["tmp_name"], $picture_path);
             }
 
-            $data = [
-                'user_id' => $_SESSION['user_id'],
-                'course_id' => $_POST['course_id'],
-                'discount' => $_POST['discount'],
-                'start_at' => $_POST['start_at'],
-                'end_at' => $_POST['end_at'],
-                'visible' => $_POST['visible'],
-                'picture' => $picture_path
-            ];
+            // [แก้ไข] รองรับการเลือกหลาย Course (CheckBox)
+            $course_ids = $_POST['course_id'] ?? []; 
+            if (!is_array($course_ids)) {
+                $course_ids = [$course_ids];
+            }
 
-            $promoModel->createCoursePromotion($data);
+            foreach ($course_ids as $cid) {
+                $data = [
+                    'user_id' => $_SESSION['user_id'],
+                    'course_id' => $cid,
+                    'discount' => $_POST['discount'],
+                    'start_at' => $_POST['start_at'],
+                    'end_at' => $_POST['end_at'],
+                    'visible' => $_POST['visible'],
+                    'picture' => $picture_path
+                ];
+                $promoModel->createCoursePromotion($data);
+            }
+
             header('Location: index.php?action=staff_promotion_list');
         }
         break;
@@ -2119,6 +2308,227 @@ switch ($action) {
             $stmt->execute([$new_status, $user_id]);
         }
         header('Location: index.php?action=admin_manage_staff');
+        exit;
+        break;
+
+    // =============================================
+    // STAFF: POS (Point of Sale) & ตะกร้าสินค้า
+    // =============================================
+
+    // 1. หน้าจอขายสินค้า (POS)
+    case 'staff_pos':
+        if (!isset($_SESSION['role_id']) || !in_array($_SESSION['role_id'], [1, 2])) {
+            header('Location: index.php?action=login');
+            exit;
+        }
+        require_once APP_PATH . '/models/Product.php';
+        $productModel = new Product($pdo);
+
+        // ดึงสินค้าทั้งหมด
+        $products = $productModel->getActiveProducts();
+
+        // เตรียมข้อมูลตะกร้า
+        $cart = $_SESSION['pos_cart'] ?? [];
+        
+        // คำนวณยอดรวม
+        $totalAmount = 0;
+        foreach ($cart as $item) {
+            $totalAmount += $item['line_total'];
+        }
+
+        $page_header = "ระบบขายหน้าร้าน (POS)";
+        $content_view = VIEW_PATH . '/staff/pos/view.php';
+        require_once VIEW_PATH . '/layouts/staff_layout.php';
+        exit;
+        break;
+
+    // 2. เพิ่มสินค้าลงตะกร้า (AJAX/POST)
+    case 'staff_pos_add':
+        while (ob_get_level()) ob_end_clean(); // Clear any previous output
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $product_id = intval($_POST['product_id']);
+            $qty = intval($_POST['qty'] ?? 1);
+
+            require_once APP_PATH . '/models/Product.php';
+            $productModel = new Product($pdo);
+            $product = $productModel->getProductById($product_id);
+
+            if ($product && $product['stock'] >= $qty) {
+                // คำนวณราคาและส่วนลด
+                $promo = $productModel->getActivePromotion($product_id);
+                $unit_price = $product['price'];
+                $discount_percent = 0;
+                if ($promo) {
+                    $discount_percent = floatval($promo['discount']);
+                }
+
+                $discount_per_unit = $unit_price * ($discount_percent / 100);
+                $final_unit_price = $unit_price - $discount_per_unit;
+
+                // เพิ่ม/รวมลงใน Session Cart
+                if (isset($_SESSION['pos_cart'][$product_id])) {
+                    $_SESSION['pos_cart'][$product_id]['qty'] += $qty;
+                } else {
+                    $_SESSION['pos_cart'][$product_id] = [
+                        'product_id' => $product['product_id'],
+                        'name'       => $product['name'],
+                        'qty'        => $qty,
+                        'unit_price' => $unit_price,
+                        'discount_percent' => $discount_percent,
+                        'discount_per_unit' => $discount_per_unit,
+                        'final_unit_price' => $final_unit_price
+                    ];
+                }
+
+                // อัปเดต Line Total ทุกครั้ง
+                $_SESSION['pos_cart'][$product_id]['line_total'] = 
+                    $_SESSION['pos_cart'][$product_id]['final_unit_price'] * $_SESSION['pos_cart'][$product_id]['qty'];
+
+                echo json_encode(['status' => 'success', 'msg' => 'เพิ่มสินค้าเรียบร้อย']);
+            } else {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'msg' => 'สินค้าหมดหรือจำนวนไม่พอ']);
+            }
+        }
+        exit;
+        break;
+
+    // 3. ลบสินค้าออกจากตะกร้า
+    case 'staff_pos_remove':
+        $idx = $_GET['id'] ?? 0;
+        if (isset($_SESSION['pos_cart'][$idx])) {
+            unset($_SESSION['pos_cart'][$idx]);
+        }
+        // รองรับ AJAX
+        if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
+            while (ob_get_level()) ob_end_clean();
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'success']);
+            exit;
+        }
+        header('Location: index.php?action=staff_pos');
+        exit;
+        break;
+
+    // 4. เคลียร์ตะกร้า
+    case 'staff_pos_clear':
+        unset($_SESSION['pos_cart']);
+        if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
+            while (ob_get_level()) ob_end_clean();
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'success']);
+            exit;
+        }
+        header('Location: index.php?action=staff_pos');
+        exit;
+        break;
+
+    // 7. (AJAX) ดึงข้อมูลตะกร้า HTML
+    case 'staff_pos_get_cart':
+        while (ob_get_level()) ob_end_clean();
+        $cart = $_SESSION['pos_cart'] ?? [];
+        $totalAmount = 0;
+        foreach ($cart as $item) {
+            $totalAmount += $item['line_total'];
+        }
+        // ส่งกลับเป็น HTML Fragment
+        ob_start();
+        ?>
+        <div class="cart-header" style="padding: 15px; border-bottom: 1px solid #eee; background: #f8f9fa;">
+            <h3 style="margin: 0; font-size: 18px;"><i class="fas fa-shopping-cart"></i> ตะกร้าสินค้า</h3>
+            <a href="javascript:void(0)" onclick="clearCart()" style="font-size: 12px; color: #dc3545; text-decoration: none; float: right;">ล้างรายการ</a>
+        </div>
+
+        <div class="cart-items" style="flex: 1; overflow-y: auto; padding: 0;">
+            <?php if (empty($cart)): ?>
+                <div style="text-align: center; padding: 40px; color: #999;">
+                    <i class="fas fa-shopping-basket" style="font-size: 40px; margin-bottom: 10px;"></i>
+                    <p>ยังไม่มีสินค้าในตะกร้า</p>
+                </div>
+            <?php else: ?>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <?php foreach ($cart as $id => $item): ?>
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 10px;">
+                                <div style="font-weight: 600; font-size: 14px;"><?= htmlspecialchars($item['name']) ?></div>
+                                <div style="font-size: 12px; color: #666;">
+                                    <?= number_format($item['final_unit_price'], 2) ?> x <?= $item['qty'] ?>
+                                    <?php if($item['discount_percent'] > 0): ?>
+                                        <span style="color: #e74c3c; font-size: 10px;">(-<?= $item['discount_percent'] ?>%)</span>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                            <td style="text-align: right; padding: 10px;">
+                                <div style="font-weight: bold;"><?= number_format($item['line_total'], 2) ?></div>
+                                <a href="javascript:void(0)" onclick="removeFromCart(<?= $id ?>)" style="color: #dc3545; font-size: 12px;"><i class="fas fa-trash"></i></a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </table>
+            <?php endif; ?>
+        </div>
+
+        <div class="cart-footer" style="padding: 20px; border-top: 1px solid #eee; background: #f8f9fa;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 18px; font-weight: bold;">
+                <span>ยอดรวมสุทธิ</span>
+                <span style="color: #2ecc71;">฿<?= number_format($totalAmount, 2) ?></span>
+            </div>
+            
+            <a href="index.php?action=staff_pos_checkout" 
+               class="btn-checkout <?= empty($cart) ? 'disabled' : '' ?>"
+               onclick="return confirm('ยืนยันการขาย?')"
+               style="display: block; width: 100%; padding: 12px; background: #2ecc71; color: white; text-align: center; border-radius: 5px; text-decoration: none; font-weight: bold;"
+            >
+                <i class="fas fa-money-bill-wave"></i> ชำระเงิน
+            </a>
+        </div>
+        <?php
+        echo ob_get_clean();
+        exit;
+        break;
+
+    // 5. ชำระเงิน (Checkout)
+    case 'staff_pos_checkout':
+        if (empty($_SESSION['pos_cart'])) {
+            header('Location: index.php?action=staff_pos');
+            exit;
+        }
+
+        require_once APP_PATH . '/models/Sale.php';
+        $saleModel = new Sale($pdo);
+        
+        $sale_id = $saleModel->createSale($_SESSION['user_id'], $_SESSION['pos_cart']);
+
+        if ($sale_id) {
+            // เคลียร์ตะกร้า
+            unset($_SESSION['pos_cart']);
+            session_write_close(); // Ensure session is saved before redirect
+            // ไปหน้าใบเสร็จ
+            header("Location: index.php?action=staff_pos_receipt&id=$sale_id");
+        } else {
+            echo "<script>alert('เกิดข้อผิดพลาดในการบันทึกการขาย'); window.history.back();</script>";
+        }
+        exit;
+        break;
+
+    // 6. ดูใบเสร็จ (Print Preview)
+    case 'staff_pos_receipt':
+        $sale_id = $_GET['id'] ?? 0;
+        require_once APP_PATH . '/models/Sale.php';
+        $saleModel = new Sale($pdo);
+
+        // ดึงข้อมูลบิลและรายการสินค้า
+        $stmt = $pdo->prepare("SELECT s.*, u.full_name as staff_name FROM sale s LEFT JOIN user u ON s.recorded_by = u.user_id WHERE s.sale_id = ?");
+        $stmt->execute([$sale_id]);
+        $saleData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$saleData) die("Receipt not found");
+
+        $saleItems = $saleModel->getSaleItems($sale_id);
+
+        require_once VIEW_PATH . '/staff/pos/receipt.php';
         exit;
         break;
 

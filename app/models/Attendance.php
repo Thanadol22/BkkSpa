@@ -89,4 +89,58 @@ class Attendance {
             return false;
         }
     }
+
+    public function getAttendanceReport($schedule_id) {
+        // 1. ดึงช่วงเวลาเรียน
+        $sqlC = "SELECT s.start_at, s.end_at, c.name as course_name 
+                 FROM course_schedule s 
+                 JOIN course c ON s.course_id = c.course_id 
+                 WHERE s.schedule_id = ?";
+        $stmtC = $this->db->prepare($sqlC);
+        $stmtC->execute([$schedule_id]);
+        $course = $stmtC->fetch(PDO::FETCH_ASSOC);
+
+        if (!$course) return null;
+
+        // 2. สร้าง Array วันที่
+        $dates = [];
+        $start = new DateTime($course['start_at']);
+        $end = new DateTime($course['end_at']);
+        $end->modify('+1 day'); // include end date
+        
+        $period = new DatePeriod($start, new DateInterval('P1D'), $end);
+        foreach ($period as $dt) {
+            $dates[] = $dt->format("Y-m-d"); // ใช้ format เดียวกับ database
+        }
+
+        // 3. ดึงนักเรียนทั้งหมด
+        $sqlStu = "SELECT u.user_id, u.full_name 
+                   FROM booking b 
+                   JOIN user u ON b.user_id = u.user_id 
+                   WHERE b.schedule_id = ? AND b.status = 'Confirmed'
+                   ORDER BY u.full_name ASC";
+        $stmtStu = $this->db->prepare($sqlStu);
+        $stmtStu->execute([$schedule_id]);
+        $students = $stmtStu->fetchAll(PDO::FETCH_ASSOC);
+
+        // 4. ดึงข้อมูลการมาเรียนทั้งหมดของ Schedule นี้
+        $sqlAtt = "SELECT user_id, attendance_date, status FROM attendance WHERE schedule_id = ?";
+        $stmtAtt = $this->db->prepare($sqlAtt);
+        $stmtAtt->execute([$schedule_id]);
+        $rawAtt = $stmtAtt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Map Attendance to Student & Date
+        $attendanceMap = [];
+        foreach ($rawAtt as $row) {
+            $key = $row['user_id'] . '_' . $row['attendance_date'];
+            $attendanceMap[$key] = $row['status'];
+        }
+
+        return [
+            'course' => $course,
+            'dates' => $dates,
+            'students' => $students,
+            'attendanceMap' => $attendanceMap
+        ];
+    }
 }

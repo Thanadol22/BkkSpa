@@ -102,11 +102,25 @@
                             </div>
 
                             <div style="border-top:1px dashed #cbd5e0; margin-top:15px; padding-top:15px; display:flex; justify-content:space-between; align-items:flex-end;">
-                                <span class="text-muted small font-weight-bold">ราคาหลักสูตร</span>
-                                <div style="text-align:right; line-height:1;">
-                                    <span class="course-price-highlight">
-                                        <?php echo number_format($bookingDetail['price'], 0); ?>
-                                    </span>
+                                <span class="text-muted small font-weight-bold">
+                                    ราคาหลักสูตร
+                                    <?php if (isset($bookingDetail['discount_percent']) && $bookingDetail['discount_percent'] > 0): ?>
+                                        <div style="color: #e53e3e; font-size: 0.85em;">(ส่วนลด <?php echo $bookingDetail['discount_percent']; ?>%)</div>
+                                    <?php endif; ?>
+                                </span>
+                                <div style="text-align:right; line-height:1.2;">
+                                    <?php if (isset($bookingDetail['discount_percent']) && $bookingDetail['discount_percent'] > 0): ?>
+                                        <div style="text-decoration: line-through; color: #a0aec0; font-size: 0.9em; margin-bottom: 2px;">
+                                            <?php echo number_format($bookingDetail['original_price'], 0); ?>
+                                        </div>
+                                        <span class="course-price-highlight" style="color:#e53e3e;">
+                                            <?php echo number_format($bookingDetail['final_price'], 0); ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="course-price-highlight">
+                                            <?php echo number_format($bookingDetail['price'], 0); ?>
+                                        </span>
+                                    <?php endif; ?>
                                     <span style="font-size:0.85rem; color:#718096; font-weight:600;">THB</span>
                                 </div>
                             </div>

@@ -55,7 +55,7 @@
 
                                     <?php if (!empty($course['promo_discount']) && $course['promo_discount'] > 0): ?>
                                         <div class="course-badge" style="top: 15px; left: 15px; background: #e74c3c; color: white;">
-                                            <i class="fas fa-tags"></i> PROMO
+                                            <i class="fas fa-tags"></i> โปรโมชั่น
                                         </div>
                                     <?php endif; ?>
 
@@ -88,10 +88,10 @@
                                             $discount = floatval($course['promo_discount']);
                                             $finalPrice = $course['price'] * (1 - ($discount / 100));
                                         ?>
-                                        <div style="font-size: 0.85em; color: #aaa; text-decoration: line-through; margin-bottom: -5px;">
+                                        <div style="font-size: 0.85em; color: #aaa; text-decoration: line-through; margin-bottom: -5px; text-align: center;">
                                             ฿<?= number_format($course['price'], 0) ?>
                                         </div>
-                                        <div style="color: #e74c3c; display: flex; align-items: center; gap: 5px;">
+                                        <div style="color: #e74c3c; display: flex; align-items: center; justify-content: center; gap: 5px;">
                                             ฿<?= number_format($finalPrice, 0) ?>
                                             <span style="font-size: 0.7em; background: #ffebee; color: #c62828; padding: 2px 6px; border-radius: 99px; font-weight: bold;">
                                                 -<?= intval($discount) ?>%
@@ -121,7 +121,9 @@
 function filterCourses(category, element) {
     // จัดการ Class active
     document.querySelectorAll('.filter-item').forEach(item => item.classList.remove('active'));
-    element.classList.add('active');
+    if (element) {
+        element.classList.add('active');
+    }
 
     // ซ่อน/แสดง Section
     let sections = document.querySelectorAll('.course-section');
@@ -134,4 +136,16 @@ function filterCourses(category, element) {
         }
     });
 }
+
+// Check URL param on load
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const category = urlParams.get('category');
+    if (category) {
+        const btn = Array.from(document.querySelectorAll('.filter-item')).find(el => el.innerText.trim() === category);
+        if (btn) {
+            filterCourses(category, btn);
+        }
+    }
+});
 </script>

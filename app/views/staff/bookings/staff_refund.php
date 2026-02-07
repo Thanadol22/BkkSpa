@@ -23,6 +23,7 @@
                     <tr style="border-bottom: 2px solid #f0f0f0;">
                         <th style="padding: 15px; text-align: left; color: #666; font-weight: 600;">Booking ID</th>
                         <th style="padding: 15px; text-align: left; color: #666; font-weight: 600;">ผู้เรียน / คอร์ส</th>
+                        <th style="padding: 15px; text-align: left; color: #666; font-weight: 600;">ยอดเงินที่ชำระ</th>
                         <th style="padding: 15px; text-align: left; color: #666; font-weight: 600;">บัญชีปลายทาง</th>
                         <th style="padding: 15px; text-align: left; color: #666; font-weight: 600;">วันที่แจ้ง</th>
                         <th style="padding: 15px; text-align: left; color: #666; font-weight: 600;">จัดการ</th>
@@ -47,6 +48,20 @@
                                 <td style="padding: 15px;">
                                     <span style="font-weight: 600; color: #333; display: block;"><?= htmlspecialchars($row['full_name']) ?></span>
                                     <small style="color: #999; font-size: 12px;"><i class="fas fa-book"></i> <?= htmlspecialchars($row['course_name']) ?></small>
+                                </td>
+
+                                <td style="padding: 15px;">
+                                    <div style="font-weight: 600; color: var(--primary-green, #28a745);">
+                                        ฿<?= number_format($row['net_price'], 2) ?>
+                                    </div>
+                                    <?php if ($row['discount_percent'] > 0): ?>
+                                        <div style="font-size: 11px; color: #dc3545; text-decoration: line-through;">
+                                            ฿<?= number_format($row['original_price'], 2) ?>
+                                        </div>
+                                        <div style="font-size: 11px; color: #dc3545;">
+                                            (ส่วนลด <?= $row['discount_percent'] ?>%)
+                                        </div>
+                                    <?php endif; ?>
                                 </td>
 
                                 <td style="padding: 15px;">

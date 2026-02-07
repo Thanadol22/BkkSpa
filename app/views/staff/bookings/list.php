@@ -51,7 +51,9 @@
                                         'Confirmed' => ['text' => 'อนุมัติแล้ว', 'class' => 'badge-approved'],
                                         'Cancelled' => ['text' => 'ยกเลิก', 'class' => 'badge-rejected'],
                                         'Rejected' => ['text' => 'ไม่อนุมัติ', 'class' => 'badge-rejected'],
+                                        'RefundPending' => ['text' => 'รอคืนเงิน', 'class' => 'badge-pending'],
                                         'Refunded' => ['text' => 'คืนเงินแล้ว', 'class' => 'badge-refunded']
+                                        
                                     ];
                                     $s = $statusMap[$b['status']] ?? ['text' => $b['status'], 'class' => 'badge-gray'];
                                     ?>

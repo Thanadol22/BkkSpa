@@ -63,4 +63,30 @@ class Promotion {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    // [New] ดึงโปรโมชั่นที่ Active ของคอร์สนี้
+    public function getActiveCoursePromotion($course_id) {
+        $sql = "SELECT * FROM promotion_course 
+                WHERE course_id = :course_id 
+                  AND visible = 1 
+                  AND NOW() BETWEEN start_at AND end_at
+                ORDER BY discount DESC 
+                LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['course_id' => $course_id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // [New] เช็คโปรโมชั่น ณ วันที่จอง (แฟร์กว่า)
+    public function getPromotionAtDate($course_id, $date) {
+        $sql = "SELECT * FROM promotion_course 
+                WHERE course_id = :course_id 
+                  AND visible = 1 
+                  AND DATE(:date) BETWEEN DATE(start_at) AND DATE(end_at)
+                ORDER BY discount DESC 
+                LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['course_id' => $course_id, 'date' => $date]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }

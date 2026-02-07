@@ -87,6 +87,7 @@ class Booking
                     u.email, 
                     
                     /* 3. ข้อมูลคอร์ส */
+                    c.course_id,
                     c.name AS course_name,
                     c.price,
                     c.course_picture,

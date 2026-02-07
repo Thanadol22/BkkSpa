@@ -427,20 +427,17 @@ ul {
 
 /* --- Highlights (Green Bar) --- */
 .highlights-section {
-    background-color: #9EB983;
-    padding: 60px 0;
+    background-color: #A9B489;
+    padding: 80px 0;
     text-align: center;
     position: relative;
-    z-index: 10;
-    margin-top: -50px;
-    /* ดึงขึ้นทับ Hero */
 }
 
 .highlights-grid {
     display: flex;
     justify-content: center;
-    gap: 40px;
-    margin-bottom: 40px;
+    gap: 60px;
+    margin-bottom: 50px;
     flex-wrap: wrap;
 }
 
@@ -448,33 +445,28 @@ ul {
     display: flex;
     flex-direction: column;
     align-items: center;
-    max-width: 200px;
+    max-width: 320px;
+    text-align: center;
+    padding: 0 10px;
 }
 
-.highlight-circle {
-    width: 180px;
-    height: 180px;
-    background-color: #E8D5B5;
-    border-radius: 50%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    border: 3px solid #fff;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    padding: 10px;
+.highlight-icon {
+    margin-bottom: 20px;
 }
 
-.highlight-circle img {
-    width: 80px;
-    margin-bottom: 10px;
+.highlight-icon img {
+    height: 120px;
+    width: auto;
+    /* Optional: If we want to force color, we can try filters, but ideally user changes images */
 }
 
-.highlight-circle p {
-    font-size: 13px;
+
+.highlight-desc {
+    font-size: 16px;
     font-weight: 600;
-    color: #5D4037;
-    line-height: 1.3;
+    color: #783E19;
+    line-height: 1.6;
+   
 }
 
 .btn-cta-orange {
@@ -501,10 +493,11 @@ ul {
     margin-top: 20px;
 }
 
-/* --- Courses --- */
+/* --- Courses (Feature Grid Design) --- */
 .courses-section {
-    padding: 80px 0;
-    text-align: center;
+    padding: 100px 0;
+    background-color: #fff;
+    overflow: hidden;
 }
 
 .section-title {
@@ -514,42 +507,83 @@ ul {
     color: #333;
 }
 
-.courses-grid {
+.feature-item {
     display: flex;
-    justify-content: center;
-    gap: 40px;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 80px;
+    margin-bottom: 100px;
 }
 
-.course-item {
-    text-align: center;
-    cursor: pointer;
-    transition: 0.3s;
+.feature-item:last-child {
+    margin-bottom: 0px; 
 }
 
-.course-item:hover {
-    transform: translateY(-10px);
+/* Reverse layout for even items */
+.feature-item.reverse {
+    flex-direction: row-reverse;
 }
 
-.course-img {
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
+.feature-img-box {
+    flex: 1;
+    height: 400px; /* Force consistent height */
+    position: relative;
+    border-radius: 20px; /* Soft round */
     overflow: hidden;
-    margin-bottom: 20px;
-    border: 5px solid #fff;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
 }
 
-.course-img img {
+.feature-img-box img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.6s ease;
 }
 
-.course-name {
-    font-size: 18px;
+.feature-item:hover .feature-img-box img {
+    transform: scale(1.05); /* Zoom effect */
+}
+
+.feature-content {
+    flex: 1;
+    text-align: left; /* Align text left */
+}
+
+.feature-icon {
+    font-size: 40px;
+    color: #DAA55D; /* Soft Gold/Orange */
+    margin-bottom: 25px;
+}
+
+.feature-title {
+    font-size: 36px;
     font-weight: 500;
+    margin-bottom: 20px;
+    color: #333;
+    /* font-family: 'Prompt', sans-serif; */
+}
+
+.feature-desc {
+    font-size: 16px;
+    color: #777;
+    line-height: 1.8;
+    margin-bottom: 35px;
+}
+
+@media (max-width: 900px) {
+    .feature-item, .feature-item.reverse {
+        flex-direction: column;
+        text-align: center;
+        gap: 40px;
+    }
+    
+    .feature-content {
+        text-align: center;
+    }
+    
+    .feature-img-box {
+        width: 100%;
+        height: 300px;
+    }
 }
 
 /* --- Online Course --- */
@@ -2476,6 +2510,7 @@ ul {
 .dot.active {
     background: #e59a45;
 }
+
 /* =========================================
    Review Modal Styles
    ========================================= */
@@ -2493,7 +2528,8 @@ ul {
     transition: transform 0.3s ease;
     animation: slideDown 0.3s forwards;
 }
-  /* หัวข้อ Modal */
+
+/* หัวข้อ Modal */
 .modal-title {
     color: #333;
     margin-bottom: 20px;
@@ -2578,18 +2614,20 @@ ul {
     justify-content: center;
     margin-bottom: 15px;
 }
+
 /* --- Custom File Upload Styling --- */
 
 .custom-file-upload {
     display: flex;
     align-items: center;
-    gap: 15px; /* ระยะห่างระหว่างปุ่มกับชื่อไฟล์ */
+    gap: 15px;
+    /* ระยะห่างระหว่างปุ่มกับชื่อไฟล์ */
     margin-top: 5px;
 }
 
 /* ซ่อน input file ตัวจริง */
 #review_image_real {
-    display: none; 
+    display: none;
     /* หรือใช้แบบนี้ถ้าต้องการให้มันยังอยู่ใน flow แต่ไม่เห็น:
     opacity: 0; position: absolute; z-index: -1; */
 }
@@ -2599,7 +2637,8 @@ ul {
     display: inline-flex;
     align-items: center;
     padding: 10px 20px;
-    background-color: #f8f9fa; /* สีพื้นหลังเทาอ่อนๆ */
+    background-color: #f8f9fa;
+    /* สีพื้นหลังเทาอ่อนๆ */
     color: #555;
     border: 1px solid #dee2e6;
     border-radius: 8px;
@@ -2607,7 +2646,7 @@ ul {
     transition: all 0.2s ease;
     font-weight: 600;
     font-size: 14px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 /* เอฟเฟกต์ตอนเอาเมาส์ชี้ */
@@ -2620,7 +2659,8 @@ ul {
 /* ไอคอนในปุ่ม */
 .file-upload-btn i {
     margin-right: 10px;
-    color: #e59a45; /* ใช้สีส้มธีมหลัก */
+    color: #e59a45;
+    /* ใช้สีส้มธีมหลัก */
     font-size: 16px;
 }
 
@@ -2631,51 +2671,54 @@ ul {
     font-style: italic;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* ถ้าชื่อยาวเกินไปให้แสดง ... */
+    text-overflow: ellipsis;
+    /* ถ้าชื่อยาวเกินไปให้แสดง ... */
     max-width: 200px;
 }
- /* CSS ดาวสำหรับให้คะแนน */
-    .rate {
-        float: left;
-        height: 46px;
-        padding: 0 10px;
-    }
 
-    .rate:not(:checked)>input {
-        position: absolute;
-        top: -9999px;
-    }
+/* CSS ดาวสำหรับให้คะแนน */
+.rate {
+    float: left;
+    height: 46px;
+    padding: 0 10px;
+}
 
-    .rate:not(:checked)>label {
-        float: right;
-        width: 1em;
-        overflow: hidden;
-        white-space: nowrap;
-        cursor: pointer;
-        font-size: 30px;
-        color: #ccc;
-    }
+.rate:not(:checked)>input {
+    position: absolute;
+    top: -9999px;
+}
 
-    .rate:not(:checked)>label:before {
-        content: '★ ';
-    }
+.rate:not(:checked)>label {
+    float: right;
+    width: 1em;
+    overflow: hidden;
+    white-space: nowrap;
+    cursor: pointer;
+    font-size: 30px;
+    color: #ccc;
+}
 
-    .rate>input:checked~label {
-        color: #ffc700;
-    }
+.rate:not(:checked)>label:before {
+    content: '★ ';
+}
 
-    .rate:not(:checked)>label:hover,
-    .rate:not(:checked)>label:hover~label {
-        color: #deb217;
-    }
+.rate>input:checked~label {
+    color: #ffc700;
+}
 
-    .rate>input:checked+label:hover,
-    .rate>input:checked+label:hover~label,
-    .rate>input:checked~label:hover,
-    .rate>input:checked~label:hover~label,
-    .rate>label:hover~input:checked~label {
-        color: #c59b08;
-    }
+.rate:not(:checked)>label:hover,
+.rate:not(:checked)>label:hover~label {
+    color: #deb217;
+}
+
+.rate>input:checked+label:hover,
+.rate>input:checked+label:hover~label,
+.rate>input:checked~label:hover,
+.rate>input:checked~label:hover~label,
+.rate>label:hover~input:checked~label {
+    color: #c59b08;
+}
+
 @keyframes slideDown {
     from {
         transform: translateY(-30px);

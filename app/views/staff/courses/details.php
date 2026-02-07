@@ -20,6 +20,7 @@
                     <th>สถานะ</th>
                     <th>ผู้สมัคร (คน)</th>
                     <th>รับได้ทั้งหมด</th>
+                    <th>จัดการ</th>
                 </tr>
             </thead>
             <tbody>
@@ -43,10 +44,15 @@
                         <td><span class="status-badge <?= $statusClass ?>"><?= $statusText ?></span></td>
                         <td><span style="font-weight: bold; color: var(--primary-green); font-size: 16px;"><?= $s['booked_count'] ?></span></td>
                         <td>/ <?= $s['capacity'] ?> คน</td>
+                        <td>
+                            <a href="index.php?action=staff_schedule_history&id=<?= $s['schedule_id'] ?>" class="btn-sm btn-info text-white" style="text-decoration:none;">
+                                <i class="fas fa-history"></i> ประวัติเข้าเรียน
+                            </a>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
-                    <tr><td colspan="6" style="text-align:center; padding: 40px; color:#888;">ยังไม่มีประวัติการเปิดรอบเรียน</td></tr>
+                    <tr><td colspan="7" style="text-align:center; padding: 40px; color:#888;">ยังไม่มีประวัติการเปิดรอบเรียน</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

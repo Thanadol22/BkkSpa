@@ -1,5 +1,5 @@
 <div class="dashboard-stats-grid">
-    <div class="stat-card card-border-warning">
+    <a href="index.php?action=staff_booking_list" class="stat-card card-border-warning" style="text-decoration: none; color: inherit;">
         <div class="stat-content">
             <h3 class="stat-title">การจองใหม่ (รอตรวจสอบ)</h3>
             <div class="stat-value text-warning">
@@ -10,9 +10,9 @@
         <div class="stat-icon-right icon-bg-warning">
             <i class="fas fa-clipboard-list"></i>
         </div>
-    </div>
+    </a>
 
-    <div class="stat-card card-border-success">
+    <a href="index.php?action=staff_promotion_list" class="stat-card card-border-success" style="text-decoration: none; color: inherit;">
         <div class="stat-content">
             <h3 class="stat-title">โปรโมชั่นที่ใช้งานอยู่</h3>
             <div class="stat-value text-success">
@@ -23,9 +23,9 @@
         <div class="stat-icon-right icon-bg-success">
             <i class="fas fa-bullhorn"></i>
         </div>
-    </div>
+    </a>
 
-    <div class="stat-card card-border-info">
+    <a href="index.php?action=staff_sale_list" class="stat-card card-border-info" style="text-decoration: none; color: inherit;">
         <div class="stat-content">
             <h3 class="stat-title">ยอดขายวันนี้</h3>
             <div class="stat-value text-info">
@@ -36,9 +36,9 @@
         <div class="stat-icon-right icon-bg-info">
             <i class="fas fa-coins"></i>
         </div>
-    </div>
+    </a>
 </div>
-<div class="stat-card card-border-danger">
+<a href="index.php?action=staff_refund_list" class="stat-card card-border-danger" style="text-decoration: none; color: inherit; display: flex; margin-bottom: 20px;">
     <div class="stat-content">
         <h3 class="stat-title">รอคืนเงิน (Refund)</h3>
         <div class="stat-value text-danger">
@@ -49,7 +49,7 @@
     <div class="stat-icon-right icon-bg-danger">
         <i class="fas fa-undo-alt"></i>
     </div>
-</div>
+</a>
 
 <div class="section-container" style="padding: 25px; margin-bottom: 30px;">
     <h3 style="margin-top: 0; font-size: 18px; color: var(--primary-green); margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">

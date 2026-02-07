@@ -116,6 +116,17 @@ $username = $_SESSION['username'] ?? 'Member';
         });
     </script>
 
+    <script>
+        // Start Background Mail Worker
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                fetch('process_mail_queue.php')
+                    .then(r => r.json())
+                    .then(d => { if(d.processed > 0) console.log('Mail sent:', d.processed); })
+                    .catch(e => console.warn('Mail worker silent fail'));
+            }, 2000);
+        });
+    </script>
 </body>
 
 </html>

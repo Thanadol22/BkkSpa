@@ -23,11 +23,26 @@
         </div>
     <?php else: ?>
 
-        <?php foreach ($scheduleData as $sch): ?>
+        <?php foreach ($scheduleData as $sch): 
+            $isCheckedAlready = false;
+            if (!empty($sch['students'])) {
+                foreach ($sch['students'] as $s) {
+                    if (!is_null($s['attendance_status'])) {
+                        $isCheckedAlready = true;
+                        break;
+                    }
+                }
+            }
+        ?>
             <div class="course-card">
                 
                 <h3 class="course-header">
                     <?= htmlspecialchars($sch['course_name']) ?>
+                    <?php if($isCheckedAlready): ?>
+                         <span style="font-size: 14px; background-color: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 4px; margin-left: 10px; font-weight: normal;">
+                            <i class="fas fa-check-circle"></i> บันทึกแล้ว
+                        </span>
+                    <?php endif; ?>
                     <span class="course-time">
                         <i class="far fa-clock"></i> <?= date('H:i', strtotime($sch['start_at'])) ?> - <?= date('H:i', strtotime($sch['end_at'])) ?>
                     </span>
@@ -42,24 +57,32 @@
                         
                         <div class="attendance-box-header">
                             <span class="attendance-col-name">รายชื่อนักเรียน</span>
+                            <?php if (!$isCheckedAlready): ?>
                             <div class="check-all-wrapper">
                                 <label for="check-all-<?= $sch['schedule_id'] ?>" class="check-all-label">เลือกทั้งหมด</label>
                                 <input type="checkbox" id="check-all-<?= $sch['schedule_id'] ?>" 
                                        class="check-all-box custom-checkbox" 
                                        data-target="list-<?= $sch['schedule_id'] ?>">
                             </div>
+                            <?php endif; ?>
                         </div>
 
                         <div id="list-<?= $sch['schedule_id'] ?>">
                             <?php if (!empty($sch['students'])): ?>
                                 <?php foreach ($sch['students'] as $stu): 
                                     $isChecked = ($stu['attendance_status'] == 1) ? 'checked' : '';
+                                    $disabledAttr = $isCheckedAlready ? 'disabled' : '';
                                 ?>
-                                    <div class="student-row">
+                                    <div class="student-row" style="<?= $isCheckedAlready ? 'opacity: 0.8; background-color: #f9fafb;' : '' ?>">
                                         <span class="student-name">
                                             <?= htmlspecialchars($stu['full_name']) ?>
+                                            <?php if($isCheckedAlready): ?>
+                                                <span style="font-size: 12px; margin-left: 5px; color: <?= $stu['attendance_status'] == 1 ? '#059669' : '#dc2626' ?>">
+                                                    (<?= $stu['attendance_status'] == 1 ? 'มาเรียน' : 'ขาดเรียน' ?>)
+                                                </span>
+                                            <?php endif; ?>
                                         </span>
-                                        <input type="checkbox" name="present_users[]" value="<?= $stu['user_id'] ?>" <?= $isChecked ?>
+                                        <input type="checkbox" name="present_users[]" value="<?= $stu['user_id'] ?>" <?= $isChecked ?> <?= $disabledAttr ?>
                                                class="student-check custom-checkbox">
                                     </div>
                                 <?php endforeach; ?>
@@ -71,7 +94,7 @@
                         </div>
                     </div>
 
-                    <?php if (!empty($sch['students'])): ?>
+                    <?php if (!empty($sch['students']) && !$isCheckedAlready): ?>
                         <div style="text-align: right; margin-top: 20px;">
                             <button type="submit" class="btn-save-attendance">
                                 <i class="fas fa-save" style="margin-right: 5px;"></i> บันทึกการเช็กชื่อ
@@ -84,6 +107,27 @@
 
     <?php endif; ?>
 </div>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<?php if (isset($_GET['status']) && $_GET['status'] == 'success'): ?>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        Swal.fire({
+            icon: 'success',
+            title: 'บันทึกการเช็กชื่อเรียบร้อยแล้ว',
+            showConfirmButton: false,
+            timer: 2000
+        }).then(() => {
+            // ลบ parameters status ออกจาก URL เพื่อไม่ให้แสดงซ้ำเมื่อ Refresh
+            const url = new URL(window.location);
+            url.searchParams.delete('status');
+            window.history.replaceState({}, '', url);
+        });
+    });
+</script>
+<?php endif; ?>
 
 <script>
     // Logic สำหรับปุ่ม เลือกทั้งหมด (Check All)

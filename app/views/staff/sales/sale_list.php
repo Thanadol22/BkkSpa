@@ -128,6 +128,9 @@
         </div>
 
         <div class="modal-footer" style="justify-content: center; margin-top: 20px;">
+            <button type="button" onclick="printReceipt()" style="background: #17a2b8; color: white; border: none; padding: 8px 20px; border-radius: 5px; margin-right: 10px; cursor: pointer; font-size: 14px;">
+                <i class="fas fa-print"></i> พิมพ์ใบเสร็จ
+            </button>
             <button type="button" class="btn-cancel" onclick="closeSaleModal()" style="background: #eee; color: #555; width: 100px;">ปิด</button>
         </div>
     </div>
@@ -140,8 +143,10 @@
     const tbody = document.getElementById('detailsBody');
     const totalDisplay = document.getElementById('modalTotalAmount');
     const saleIdDisplay = document.getElementById('modalSaleId');
+    let currentSaleId = 0;
 
     function viewSaleDetails(saleId) {
+        currentSaleId = saleId;
         saleModal.classList.add('show');
         loading.style.display = 'block';
         table.style.display = 'none';
@@ -216,6 +221,12 @@
 
     function closeSaleModal() {
         saleModal.classList.remove('show');
+    }
+
+    function printReceipt() {
+        if (currentSaleId > 0) {
+            window.open('index.php?action=staff_pos_receipt&id=' + currentSaleId, '_blank');
+        }
     }
     
     window.onclick = function(event) {
