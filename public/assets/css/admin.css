@@ -1,0 +1,851 @@
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Poppins:wght@300;400;500;600&display=swap');
+:root {
+    --primary-green: #28a745;       /* สีเขียวหลัก */
+    --primary-dark: #218838;        /* สีเขียวเข้ม (Hover) */
+    --primary-light: #e8f5e9;       /* สีพื้นหลังเขียวอ่อน */
+    --sidebar-bg: #ffffff;          /* พื้นหลัง Sidebar */
+    --sidebar-text: #5f6368;        /* สีตัวอักษร Sidebar */
+    --sidebar-active-bg: #e8f5e9;   /* พื้นหลังเมนูที่เลือก */
+    --sidebar-active-text: #28a745; /* สีตัวอักษรเมนูที่เลือก */
+    --bg-body: #f4f6f9;             /* สีพื้นหลังหน้าเว็บ */
+    --text-color: #333333;
+    --border-color: #e0e0e0;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Sarabun', sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+/* --- Layout Structure --- */
+.app-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+    width: 260px;
+    background-color: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    z-index: 100;
+    transition: all 0.3s;
+}
+
+.sidebar-header {
+    padding: 25px 20px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.brand-logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.brand-sub {
+    font-size: 12px;
+    color: #999;
+    margin-top: 5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 20px 0;
+    overflow-y: auto;
+}
+
+.nav-section {
+    margin-bottom: 20px;
+}
+
+.nav-label {
+    display: block;
+    padding: 0 25px;
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 25px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    transition: all 0.2s;
+    font-weight: 500;
+    border-left: 4px solid transparent;
+}
+
+.nav-item i {
+    width: 25px;
+    font-size: 16px;
+    text-align: center;
+    margin-right: 10px;
+}
+
+.nav-item:hover {
+    background-color: #f8f9fa;
+    color: var(--primary-green);
+}
+
+.nav-item.active {
+    background-color: var(--sidebar-active-bg);
+    color: var(--sidebar-active-text);
+    border-left-color: var(--primary-green);
+}
+
+.sidebar-footer {
+    padding: 15px;
+    border-top: 1px solid var(--border-color);
+}
+
+.logout-link {
+    color: #dc3545;
+}
+.logout-link:hover {
+    background-color: #ffebee;
+    color: #c82333;
+}
+
+/* --- Main Content --- */
+.main-content {
+    flex: 1;
+    margin-left: 260px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Top Bar --- */
+.top-bar {
+    height: 70px;
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-info {
+    text-align: right;
+}
+
+.user-name {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.user-role {
+    display: block;
+    font-size: 11px;
+    color: #999;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    background-color: var(--primary-light);
+    color: var(--primary-green);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+/* --- Content Body --- */
+.content-body {
+    padding: 30px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* --- Common Components (ใช้ร่วมกับ Dashboard/Report ได้) --- */
+.section-container {
+    background: #fff;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    margin-bottom: 25px;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+/* Table Style */
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th {
+    background-color: #f8f9fa;
+    color: #666;
+    font-weight: 600;
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 2px solid #eee;
+}
+
+.admin-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.admin-table tr:hover {
+    background-color: #fcfcfc;
+}
+
+/* --- Import CSS ที่เคยทำไว้ก่อนหน้า --- */
+/* นำ CSS ของ Dashboard, Table, Card ที่เราเคยทำมาแปะต่อท้ายตรงนี้ได้เลย */
+/* เพื่อให้ Style ของหน้า Dashboard ทำงานได้ */
+/* =========================================
+   Admin Dashboard Styles
+   ========================================= */
+
+/* --- Header & Typography --- */
+.dashboard-header {
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dashboard-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 30px 0 20px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+/* --- Grids System --- */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 คอลัมน์ */
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 คอลัมน์ */
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+/* Responsive: มือถือให้เรียงเดี่ยว */
+@media (max-width: 768px) {
+    .stats-grid, .charts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --- Cards --- */
+.dashboard-card {
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    transition: transform 0.2s;
+}
+
+.dashboard-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* --- Top Stats --- */
+.stat-label {
+    font-size: 14px;
+    color: #666;
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+/* --- Charts General --- */
+.chart-header {
+    margin-bottom: 20px;
+    display: block;
+}
+
+.chart-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+/* --- Horizontal Bar Chart --- */
+.h-bar-group {
+    margin-bottom: 15px;
+}
+
+.h-bar-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #2e7d32;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.h-bar-track {
+    background: #f1f8e9;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.h-bar-fill {
+    background: #a5d6a7; /* เขียวพาสเทล */
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.5s ease;
+}
+
+/* --- Vertical Bar Chart --- */
+.v-chart-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 160px;
+    padding-top: 10px;
+}
+
+.v-bar-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 12%;
+    height: 100%;
+    justify-content: flex-end;
+}
+
+.v-bar-track {
+    width: 100%;
+    background: #e8f5e9;
+    border-radius: 4px;
+    position: relative;
+    transition: height 0.5s ease;
+    min-height: 4px;
+}
+
+.v-bar-label {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #2e7d32;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* --- Pie Chart --- */
+.pie-chart-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 180px;
+    position: relative;
+    gap: 30px;
+}
+
+.pie-chart {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: conic-gradient(
+        #66bb6a 0% 25%,   /* สินค้า */
+        #e8f5e9 25% 100%  /* บริการ */
+    );
+}
+
+.pie-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    color: #444;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+/* --- Export Button --- */
+.btn-export-pdf {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 10px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14;
+}
+/* =========================================
+   Admin Dashboard Cards (Ported from Staff)
+   ========================================= */
+
+/* Grid System */
+.dashboard-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.action-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+/* Stat Cards */
+.stat-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    border-left: 4px solid transparent;
+    transition: transform 0.2s;
+}
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.stat-title { margin: 0 0 10px 0; font-size: 14px; color: #666; font-weight: 600; }
+.stat-value { font-size: 28px; font-weight: 700; margin-bottom: 5px; }
+.stat-desc { margin: 0; font-size: 12px; color: #999; }
+
+.stat-icon-right {
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+}
+
+/* Theme Colors for Cards */
+/* สีน้ำเงิน (Primary) */
+.card-border-primary { border-left-color: #3b82f6; }
+.text-primary { color: #3b82f6; }
+.icon-bg-primary { background: #eff6ff; color: #3b82f6; }
+
+/* สีม่วง (Purple) - สำหรับสมาชิก */
+.card-border-purple { border-left-color: #8b5cf6; }
+.text-purple { color: #8b5cf6; }
+.icon-bg-purple { background: #f5f3ff; color: #8b5cf6; }
+
+/* สีเขียว (Success) - สำหรับยอดขาย */
+.card-border-success { border-left-color: #10b981; }
+.text-success { color: #10b981; }
+.icon-bg-success { background: #ecfdf5; color: #10b981; }
+
+/* Quick Actions */
+.btn-action-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    text-decoration: none;
+    color: #333;
+    border: 1px solid #eee;
+    transition: all 0.2s;
+    display: flex; flex-direction: column; align-items: center;
+}
+.btn-action-card:hover {
+    border-color: #3b82f6;
+    background: #f8fafc;
+}
+.action-icon {
+    font-size: 24px; margin-bottom: 10px;
+    color: #3b82f6; /* สีน้ำเงิน Admin */
+}
+
+/* Table Style Override */
+.admin-table {
+    width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden;
+}
+.admin-table th { background: #f1f5f9; padding: 12px 15px; text-align: left; font-weight: 600; color: #333; }
+.admin-table td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 14px; color: #555; }
+.admin-table tr:hover { background-color: #f8fafc; }
+
+/* =========================================
+   Admin: Staff Management (จัดการพนักงาน)
+   ========================================= */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* ปุ่มกด (Buttons) */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--secondary-color, #3b82f6);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-primary:hover { background-color: #2563eb; }
+
+.btn-danger {
+    display: inline-flex;
+    align-items: center;
+    background-color: #ef4444;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+}
+.btn-danger:hover { background-color: #dc2626; }
+
+.btn-icon-edit { color: #f59e0b; margin-right: 10px; transition: color 0.2s; }
+.btn-icon-edit:hover { color: #d97706; }
+
+.btn-icon-delete { color: #ef4444; transition: color 0.2s; }
+.btn-icon-delete:hover { color: #b91c1c; }
+
+/* สถานะ (Badges) */
+.badge-status {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.badge-active { background-color: #dcfce7; color: #166534; }
+.badge-inactive { background-color: #fee2e2; color: #991b1b; }
+
+/* =========================================
+   Admin: Forms (ฟอร์มกรอกข้อมูล)
+   ========================================= */
+.form-container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.form-group { margin-bottom: 20px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    box-sizing: border-box; /* สำคัญ: ไม่ให้ Padding ดันกล่องแตก */
+    transition: border-color 0.2s;
+}
+.form-control:focus {
+    outline: none;
+    border-color: var(--secondary-color, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-actions {
+    text-align: right;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #f3f4f6;
+}
+
+.link-cancel {
+    color: #6b7280;
+    margin-right: 20px;
+    text-decoration: none;
+    font-size: 14px;
+}
+.link-cancel:hover { color: #374151; }
+
+/* =========================================
+   Admin: Reports & Charts (กราฟและรายงาน)
+   ========================================= */
+/* Pie Chart */
+.chart-pie-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+}
+.pie-simple {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    margin: 0 auto;
+    /* Background จะถูก set inline เพราะเป็นค่า Dynamic */
+}
+.pie-legend { margin-left: 30px; }
+.legend-item { margin-bottom: 10px; display: flex; align-items: center; font-size: 14px; }
+.legend-color { width: 12px; height: 12px; display: inline-block; border-radius: 2px; margin-right: 8px; }
+
+/* Horizontal Bar Chart */
+.bar-h-item { display: flex; align-items: center; margin-bottom: 15px; }
+.bar-h-label { width: 180px; font-size: 14px; font-weight: 500; color: #333; }
+.bar-h-track { flex: 1; background: #f1f5f9; height: 12px; border-radius: 6px; overflow: hidden; }
+.bar-h-fill { height: 100%; background: var(--secondary-color, #3b82f6); border-radius: 6px; }
+.bar-h-val { margin-left: 10px; font-size: 13px; color: #666; width: 60px; text-align: right; }
+
+/* Vertical Bar Chart */
+.chart-v-wrapper {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    height: 200px;
+    padding-top: 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+.chart-v-item {
+    text-align: center;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    width: 12%;
+}
+.chart-v-val { font-size: 11px; margin-bottom: 5px; color: #6b7280; }
+.chart-v-bar { background: #60a5fa; border-radius: 4px 4px 0 0; min-height: 2px; transition: height 0.5s; }
+.chart-v-label { margin-top: 10px; font-size: 12px; color: #64748b; }
+/* =========================================
+   New Revenue Report Design (Green Theme)
+   ========================================= */
+
+/* Filter Button Group */
+.filter-group {
+    display: flex;
+    gap: 10px;
+    background: #fff;
+    padding: 5px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+.btn-filter {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.btn-filter:hover {
+    background: #f0fdf4; /* เขียวอ่อนจางๆ */
+    color: #16a34a;
+}
+
+.btn-filter.active {
+    background: #16a34a; /* เขียวเข้ม (Primary Green) */
+    color: white;
+    box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2);
+}
+
+/* Report Grid Layout */
+.report-grid-container {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+/* Custom Card Style */
+.report-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px; /* มุมมนโค้งตามแบบ */
+    padding: 30px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.report-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 25px;
+}
+
+/* Green Bar Chart (Horizontal) */
+.green-bar-track {
+    background: #f0fdf4; /* เขียวพาสเทลอ่อนสุด */
+    height: 12px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex: 1;
+}
+.green-bar-fill {
+    background: #dcfce7; /* เขียวพาสเทลเข้มขึ้นนิดนึง (ตามแบบ) */
+    height: 100%;
+    border-radius: 6px;
+    position: relative;
+}
+/* เส้นขีดจบ Bar (Tick mark) */
+.green-bar-fill::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -2px;
+    bottom: -2px;
+    width: 2px;
+    background: #86efac; /* สีเขียวเส้นขอบ */
+}
+
+/* Vertical Chart Style */
+.v-chart-wrapper {
+    display: flex;
+    justify-content: space-between; /* กระจายห่างเท่ากัน */
+    align-items: flex-end;
+    height: 180px;
+    padding-top: 20px;
+}
+.v-bar-col {
+    width: 40px; /* ความกว้างแท่ง */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+}
+.v-bar-green {
+    width: 100%;
+    background: #ecfdf5; /* สีพื้นหลังแท่ง */
+    border-top: 3px solid #6ee7b7; /* เส้นขีดด้านบน */
+    border-radius: 2px 2px 0 0;
+    transition: height 0.5s ease;
+}
+.v-bar-label {
+    margin-top: 15px;
+    font-size: 12px;
+    color: #16a34a; /* ตัวหนังสือสีเขียว */
+    font-weight: 600;
+}
+
+/* Pie Chart Colors */
+.legend-dot.green-dark { background: #16a34a; }
+.legend-dot.green-light { background: #dcfce7; }
+/* เพิ่มต่อท้ายไฟล์ admin.css */
+
+/* Palette สีสำหรับกราฟ Pie Chart แบบหลายส่วน */
+:root {
+    --chart-color-1: #16a34a; /* เขียวหลัก */
+    --chart-color-2: #3b82f6; /* น้ำเงิน */
+    --chart-color-3: #f59e0b; /* ส้มเหลือง */
+    --chart-color-4: #8b5cf6; /* ม่วง */
+    --chart-color-5: #06b6d4; /* ฟ้า cyan */
+    --chart-color-6: #ec4899; /* ชมพู */
+}
+.bg-c1 { background-color: var(--chart-color-1); }
+.bg-c2 { background-color: var(--chart-color-2); }
+.bg-c3 { background-color: var(--chart-color-3); }
+.bg-c4 { background-color: var(--chart-color-4); }
+.bg-c5 { background-color: var(--chart-color-5); }
+.bg-c6 { background-color: var(--chart-color-6); }
+.sidebar-header h3 {
+    font-size: 20px;
+    margin: 0 0 5px 0;
+    color: var(--primary-green);
+    font-weight: 700;
+}
+
+/* PDF Specific (Print Mode) */
+@media print {
+    body { padding: 0; background: white; }
+    .admin-sidebar, .btn-danger, .top-bar { display: none !important; } /* ซ่อนเมนู */
+    .admin-content { margin: 0 !important; width: 100% !important; }
+    .section-container { box-shadow: none !important; border: 1px solid #ddd; break-inside: avoid; }
+    .header-pdf { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+    .bar-h-track, .chart-v-bar, .pie-simple { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .dashboard-stats-grid, .action-buttons-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 576px) {
+    .dashboard-stats-grid, .action-buttons-grid { grid-template-columns: 1fr; }
+}
