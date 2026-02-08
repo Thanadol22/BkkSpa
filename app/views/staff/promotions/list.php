@@ -1,4 +1,15 @@
 <div class="section-container">
+
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="alert alert-success" style="background-color: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
+            <?= $_SESSION['success']; unset($_SESSION['success']); ?>
+        </div>
+    <?php endif; ?>
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="alert alert-danger" style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
+            <?= $_SESSION['error']; unset($_SESSION['error']); ?>
+        </div>
+    <?php endif; ?>
     
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
         <h3 style="margin:0; font-size:20px; color:var(--primary-green);">
@@ -24,6 +35,7 @@
                     <th style="text-align: center;">ส่วนลด</th>
                     <th>ระยะเวลา</th>
                     <th style="text-align: center;">สถานะ</th>
+                    <th style="text-align: center;">จัดการ</th>
                 </tr>
             </thead>
             <tbody>
@@ -77,10 +89,30 @@
                                 <?= $statusText ?>
                             </span>
                         </td>
+                        <td style="text-align: center;">
+                            <?php if ($currentTime > $endTime): ?>
+                                <button class="action-btn" style="background-color: #ccc; cursor: not-allowed; border:none; color: #fff;" disabled title="หมดอายุแล้ว ไม่สามารถแก้ไขได้">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button class="action-btn" style="background-color: #ccc; cursor: not-allowed; border:none; color: #fff;" disabled title="หมดอายุแล้ว ไม่สามารถเปิด/ปิดได้">
+                                    <i class="fas fa-eye-slash"></i>
+                                </button>
+                            <?php else: ?>
+                                <a href="index.php?action=staff_promotion_product_edit&id=<?= $p['promotion_p_id'] ?>" class="action-btn btn-edit" title="แก้ไขข้อมูล">
+                                    <i class="fas fa-pen"></i>
+                                </a>
+                                <a href="index.php?action=staff_promotion_product_toggle&id=<?= $p['promotion_p_id'] ?>&status=<?= $p['visible'] ?>" 
+                                   class="action-btn <?= $p['visible'] == 1 ? 'btn-toggle-on' : 'btn-toggle-off' ?>" 
+                                   title="<?= $p['visible'] == 1 ? 'ปิดการมองเห็น (ลูกค้าจะไม่เห็น)' : 'เปิดการมองเห็น (เริ่มใช้งาน)' ?>"
+                                   onclick="return confirm('ยืนยันการ<?= $p['visible'] == 1 ? 'ปิด' : 'เปิด' ?>การมองเห็นโปรโมชั่นนี้?');">
+                                    <i class="fas fa-<?= $p['visible'] == 1 ? 'eye-slash' : 'eye' ?>"></i>
+                                </a>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
-                    <tr><td colspan="5" class="text-center py-4 text-muted">ไม่พบข้อมูลโปรโมชั่นสินค้า</td></tr>
+                    <tr><td colspan="6" class="text-center py-4 text-muted">ไม่พบข้อมูลโปรโมชั่นสินค้า</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
@@ -96,6 +128,7 @@
                     <th style="text-align: center;">ส่วนลด</th>
                     <th>ระยะเวลา</th>
                     <th style="text-align: center;">สถานะ</th>
+                    <th style="text-align: center;">จัดการ</th>
                 </tr>
             </thead>
             <tbody>
@@ -145,10 +178,30 @@
                                 <?= $statusText ?>
                             </span>
                         </td>
+                        <td style="text-align: center;">
+                            <?php if ($currentTime > $endTime): ?>
+                                <button class="action-btn" style="background-color: #ccc; cursor: not-allowed; border:none; color: #fff;" disabled title="หมดอายุแล้ว ไม่สามารถแก้ไขได้">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button class="action-btn" style="background-color: #ccc; cursor: not-allowed; border:none; color: #fff;" disabled title="หมดอายุแล้ว ไม่สามารถเปิด/ปิดได้">
+                                    <i class="fas fa-eye-slash"></i>
+                                </button>
+                            <?php else: ?>
+                                <a href="index.php?action=staff_promotion_course_edit&id=<?= $c['promotion_c_id'] ?>" class="action-btn btn-edit" title="แก้ไขข้อมูล">
+                                    <i class="fas fa-pen"></i>
+                                </a>
+                                <a href="index.php?action=staff_promotion_course_toggle&id=<?= $c['promotion_c_id'] ?>&status=<?= $c['visible'] ?>" 
+                                   class="action-btn <?= $c['visible'] == 1 ? 'btn-toggle-on' : 'btn-toggle-off' ?>" 
+                                   title="<?= $c['visible'] == 1 ? 'ปิดการมองเห็น (ลูกค้าจะไม่เห็น)' : 'เปิดการมองเห็น (เริ่มใช้งาน)' ?>"
+                                   onclick="return confirm('ยืนยันการ<?= $c['visible'] == 1 ? 'ปิด' : 'เปิด' ?>การมองเห็นโปรโมชั่นนี้?');">
+                                    <i class="fas fa-<?= $c['visible'] == 1 ? 'eye-slash' : 'eye' ?>"></i>
+                                </a>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
-                    <tr><td colspan="5" class="text-center py-4 text-muted">ไม่พบข้อมูลโปรโมชั่นหลักสูตร</td></tr>
+                    <tr><td colspan="6" class="text-center py-4 text-muted">ไม่พบข้อมูลโปรโมชั่นหลักสูตร</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

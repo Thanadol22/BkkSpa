@@ -28,6 +28,43 @@ class Promotion {
         return $stmt->execute($data);
     }
 
+    public function getProductPromotionById($id) {
+        $stmt = $this->db->prepare("SELECT * FROM promotion_product WHERE promotion_p_id = :id");
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function updateProductPromotion($id, $data) {
+        $sql = "UPDATE promotion_product 
+                SET discount = :discount, start_at = :start_at, end_at = :end_at, visible = :visible";
+        
+        if (!empty($data['picture'])) {
+            $sql .= ", promotion_p_picture = :picture";
+        }
+        
+        $sql .= " WHERE promotion_p_id = :id";
+        
+        $params = [
+            'discount' => $data['discount'],
+            'start_at' => $data['start_at'],
+            'end_at' => $data['end_at'],
+            'visible' => $data['visible'],
+            'id' => $id
+        ];
+
+        if (!empty($data['picture'])) {
+            $params['picture'] = $data['picture'];
+        }
+
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($params);
+    }
+
+    public function toggleProductStatus($id, $status) {
+        $stmt = $this->db->prepare("UPDATE promotion_product SET visible = :visible WHERE promotion_p_id = :id");
+        return $stmt->execute(['visible' => $status, 'id' => $id]);
+    }
+
     // ดึงรายชื่อสินค้าทั้งหมดเพื่อใส่ใน Dropdown
     public function getAllProducts() {
         $stmt = $this->db->prepare("SELECT product_id, name FROM product WHERE is_active = 1");
@@ -56,6 +93,43 @@ class Promotion {
                 VALUES (:user_id, :course_id, :discount, :start_at, :end_at, :visible, :picture)";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute($data);
+    }
+
+    public function getCoursePromotionById($id) {
+        $stmt = $this->db->prepare("SELECT * FROM promotion_course WHERE promotion_c_id = :id");
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function updateCoursePromotion($id, $data) {
+        $sql = "UPDATE promotion_course 
+                SET discount = :discount, start_at = :start_at, end_at = :end_at, visible = :visible";
+        
+        if (!empty($data['picture'])) {
+            $sql .= ", promotion_p_picture = :picture";
+        }
+        
+        $sql .= " WHERE promotion_c_id = :id";
+        
+        $params = [
+            'discount' => $data['discount'],
+            'start_at' => $data['start_at'],
+            'end_at' => $data['end_at'],
+            'visible' => $data['visible'],
+            'id' => $id
+        ];
+
+        if (!empty($data['picture'])) {
+            $params['picture'] = $data['picture'];
+        }
+
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($params);
+    }
+
+    public function toggleCourseStatus($id, $status) {
+        $stmt = $this->db->prepare("UPDATE promotion_course SET visible = :visible WHERE promotion_c_id = :id");
+        return $stmt->execute(['visible' => $status, 'id' => $id]);
     }
 
     public function getAllCourses() {
@@ -88,5 +162,35 @@ class Promotion {
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['course_id' => $course_id, 'date' => $date]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function getActivePromotionsForHomepage() {
+        $promos = [];
+
+        // 1. Product Promotions
+        $sql = "SELECT pp.promotion_p_picture as picture, 'product' as type, pp.product_id as item_id
+                FROM promotion_product pp
+                JOIN product p ON pp.product_id = p.product_id
+                WHERE pp.visible = 1 
+                  AND p.is_active = 1
+                  AND NOW() BETWEEN pp.start_at AND pp.end_at 
+                  AND pp.promotion_p_picture IS NOT NULL 
+                  AND pp.promotion_p_picture != ''";
+        $stmt = $this->db->query($sql);
+        $promos = array_merge($promos, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+        // 2. Course Promotions
+        $sql = "SELECT pc.promotion_p_picture as picture, 'course' as type, pc.course_id as item_id
+                FROM promotion_course pc
+                JOIN course c ON pc.course_id = c.course_id
+                WHERE pc.visible = 1 
+                  AND c.is_active = 1
+                  AND NOW() BETWEEN pc.start_at AND pc.end_at 
+                  AND pc.promotion_p_picture IS NOT NULL 
+                  AND pc.promotion_p_picture != ''";
+        $stmt = $this->db->query($sql);
+        $promos = array_merge($promos, $stmt->fetchAll(PDO::FETCH_ASSOC));
+        
+        return $promos;
     }
 }

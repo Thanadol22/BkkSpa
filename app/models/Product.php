@@ -23,6 +23,23 @@ class Product {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // [New] ดึงสินค้าพร้อมส่วนลด (ถ้ามี)
+    public function getActiveProductsWithPromo() {
+        $now = date('Y-m-d H:i:s');
+        $sql = "SELECT p.*, MAX(pp.discount) as discount 
+                FROM product p
+                LEFT JOIN promotion_product pp ON p.product_id = pp.product_id
+                    AND pp.visible = 1 
+                    AND :now BETWEEN pp.start_at AND pp.end_at
+                WHERE p.is_active = 1
+                GROUP BY p.product_id
+                ORDER BY p.created_at DESC";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['now' => $now]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     // ฟังก์ชันปรับปรุงจำนวนสต็อก (บวกเพิ่ม หรือ ลบออก)
     public function adjustStock($product_id, $quantity) {
         // ใช้การบวกค่าเข้าไปตรงๆ (ถ้า $quantity เป็นลบ มันจะลดลงเอง)

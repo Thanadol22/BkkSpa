@@ -31,7 +31,7 @@ $username = $_SESSION['username'] ?? 'Member';
             <li><a href="index.php">หน้าแรก</a></li>
             <li><a href="index.php?action=courses">หลักสูตร</a></li>
             <li><a href="index.php?action=products">ผลิตภัณฑ์สปา</a></li>
-            <li><a href="#">แกลเลอรี</a></li>
+            <li><a href="index.php?action=gallery">แกลเลอรี</a></li>
             <li><a href="index.php?action=about">เกี่ยวกับเรา</a></li>
             <li><a href="index.php?action=contact">ติดต่อเรา</a></li>
 

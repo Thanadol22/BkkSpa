@@ -105,6 +105,10 @@
                                 <div class="bsa-card-footer">
                                     <?php if ($is_full): ?>
                                         <button class="btn-apply btn-disabled" disabled style="background-color: #ccc; cursor: not-allowed;">สมัคร</button>
+                                    <?php elseif (!empty($course['booking_status'])): ?>
+                                        <button class="btn-apply btn-disabled" disabled style="background-color: #ccc; cursor: not-allowed; width: 100%;">
+                                            สมัครแล้ว 
+                                        </button>
                                     <?php else: ?>
                                         <a href="index.php?action=course_detail&id=<?= $course['course_id'] ?>" class="btn-apply">สมัคร</a>
                                     <?php endif; ?>

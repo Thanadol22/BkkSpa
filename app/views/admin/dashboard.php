@@ -31,7 +31,7 @@
             <div class="stat-value text-success">
                 <?= number_format($daily_sales ?? 0) ?>
             </div>
-            <p class="stat-desc">บาท (THB)</p>
+            <p class="stat-desc">บาท </p>
         </div>
         <div class="stat-icon-right icon-bg-success">
             <i class="fas fa-coins"></i>
@@ -41,7 +41,7 @@
 
 <div class="section-container" style="padding: 25px; margin-bottom: 30px;">
     <h3 style="margin-top: 0; font-size: 18px; color: var(--primary-color); margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-        <i class="fas fa-bolt"></i> เมนูด่วน (Quick Actions)
+        <i class="fas fa-bolt"></i> เมนูด่วน
     </h3>
 
     <div class="action-buttons-grid">

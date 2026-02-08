@@ -8,7 +8,12 @@ $capacity_remaining = 0; // จำนวนที่นั่งคงเหล�
 if ($schedule) {
     // [สำคัญ] ดึงค่า Capacity คงเหลือ
     $capacity_remaining = $schedule['capacity'] ?? 0;
-    $is_full = ($capacity_remaining <= 0);
+    
+    // ตรวจสอบวันหมดเขต (ต้องสมัครก่อนวันเริ่มเรียน)
+    $is_expired = ($schedule['start_at'] <= date('Y-m-d'));
+    
+    // ปุ่มจะเป็นสีเทา (is_full = true) ถ้าที่นั่งเต็ม หรือ หมดเขตแล้ว
+    $is_full = ($capacity_remaining <= 0) || $is_expired;
 
     // ฟังก์ชันแปลงวันที่เป็นภาษาไทยแบบสั้น
     function thaiDateShort($date) {
@@ -24,8 +29,10 @@ if ($schedule) {
     $scheduleText = "$startDate - $endDate";
     
     // ตั้งค่า Capacity Text ตามที่เหลือ
-    if ($is_full) {
+    if ($capacity_remaining <= 0) {
         $capacityText = "ที่นั่งเต็มแล้ว";
+    } elseif ($is_expired) {
+        $capacityText = "ปิดรับสมัคร (เริ่มเรียนแล้ว)";
     } else {
         $capacityText = "เหลือ $capacity_remaining ที่";
     }
@@ -107,6 +114,10 @@ if ($schedule) {
                 <button class="btn-apply-large" disabled style="background-color: #ccc; cursor: not-allowed; border:none;">
                     สมัคร
                 </button>
+            <?php elseif (isset($existingBookingStatus) && $existingBookingStatus): ?>
+                <button class="btn-apply-large" disabled style="background-color: #ccc; cursor: not-allowed; border:none; font-size: 1rem;">
+                    สมัครแล้ว
+                </button>  
             <?php else: ?>
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <button onclick="openBookingModal(<?= $course['course_id'] ?>)" class="btn-apply-large" style="border:none; cursor:pointer;">

@@ -1,6 +1,6 @@
 <div class="section-container">
     <div class="section-header">
-        <h2 class="section-title">จัดการข้อมูลพนักงาน (Staff)</h2>
+        <h2 class="section-title">จัดการข้อมูลพนักงาน</h2>
         <a href="index.php?action=admin_staff_create" class="btn-primary">
             <i class="fas fa-plus"></i> เพิ่มพนักงาน
         </a>

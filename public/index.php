@@ -261,7 +261,8 @@ switch ($action) {
         // [ Logic ดึงข้อมูลคอร์ส หน้า Guest ]
         // Join กับ promotion_course เพื่อดึงส่วนลด (เอาส่วนลดมากที่สุดถ้ามีซ้อนกัน)
         $sql = "SELECT c.*, 
-                   (SELECT capacity FROM course_schedule s WHERE s.course_id = c.course_id AND s.start_at >= CURDATE() ORDER BY s.start_at ASC LIMIT 1) AS capacity,
+                   (SELECT capacity FROM course_schedule s WHERE s.course_id = c.course_id AND s.start_at > CURDATE() ORDER BY s.start_at ASC LIMIT 1) AS capacity,
+                   (SELECT schedule_id FROM course_schedule s WHERE s.course_id = c.course_id AND s.start_at > CURDATE() ORDER BY s.start_at ASC LIMIT 1) AS next_schedule_id,
                    MAX(p.discount) as promo_discount
                 FROM course c
                 LEFT JOIN promotion_course p ON c.course_id = p.course_id 
@@ -276,8 +277,28 @@ switch ($action) {
         } catch (Exception $e) {
             $allCourses = [];
         }
+
+        // [เพิ่ม] ดึงข้อมูลการจองของผู้ใช้ (ถ้าล็อกอิน) - เช็คตาม schedule_id
+        $userBookingMap = [];
+        if (isset($_SESSION['user_id'])) {
+            $chkSql = "SELECT b.schedule_id, b.status 
+                       FROM booking b 
+                       WHERE b.user_id = ? AND b.status NOT IN ('Rejected', 'Cancelled')";
+            $chkStmt = $pdo->prepare($chkSql);
+            $chkStmt->execute([$_SESSION['user_id']]);
+            $rows = $chkStmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach($rows as $r) {
+                // map status by schedule_id
+                $userBookingMap[$r['schedule_id']] = $r['status'];
+            }
+        }
+
         $coursesByType = [];
         foreach ($allCourses as $course) {
+            // map booking status เฉพาะรอบที่กำลังแสดง (next_schedule_id)
+            $sid = $course['next_schedule_id'];
+            $course['booking_status'] = ($sid && isset($userBookingMap[$sid])) ? $userBookingMap[$sid] : null;
+
             $type = $course['course_type'];
             if (!isset($coursesByType[$type])) {
                 $coursesByType[$type] = [];
@@ -307,7 +328,7 @@ switch ($action) {
                 header('Location: index.php?action=courses');
                 exit;
             }
-            $sqlSch = "SELECT * FROM course_schedule WHERE course_id = ? AND start_at >= CURDATE() ORDER BY start_at ASC LIMIT 1";
+            $sqlSch = "SELECT * FROM course_schedule WHERE course_id = ? AND start_at > CURDATE() ORDER BY start_at ASC LIMIT 1";
             $stmtSch = $pdo->prepare($sqlSch);
             $stmtSch->execute([$course_id]);
             $schedule = $stmtSch->fetch(PDO::FETCH_ASSOC);
@@ -315,6 +336,22 @@ switch ($action) {
             $stmtRel = $pdo->prepare($sqlRel);
             $stmtRel->execute([$course_id]);
             $relatedCourses = $stmtRel->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Check existing booking (เฉพาะรอบเรียนที่กำลังจะแสดงนี้)
+            $existingBookingStatus = null;
+            if (isset($_SESSION['user_id']) && $schedule) {
+                $chkSql = "SELECT b.status FROM booking b 
+                           WHERE b.user_id = ? AND b.schedule_id = ? 
+                           AND b.status NOT IN ('Rejected', 'Cancelled') 
+                           LIMIT 1";
+                $chkStmt = $pdo->prepare($chkSql);
+                $chkStmt->execute([$_SESSION['user_id'], $schedule['schedule_id']]);
+                $exRes = $chkStmt->fetch(PDO::FETCH_ASSOC);
+                if ($exRes) {
+                    $existingBookingStatus = $exRes['status'];
+                }
+            }
+            
             $title = $course['name'] . " - Bangkok Spa Academy";
             include VIEW_PATH . '/guest/course_detail.php';
         } else {
@@ -328,15 +365,64 @@ switch ($action) {
         // 1. เรียก Model
         require_once APP_PATH . '/models/Product.php';
         $productModel = new Product($pdo);
-        $products = $productModel->getActiveProducts();
+        // เลือกใช้ getActiveProductsWithPromo เพื่อดึงส่วนลดมาด้วย
+        $products = $productModel->getActiveProductsWithPromo();
         $title = 'สินค้าและผลิตภัณฑ์ | Bangkok Spa Academy';
 
         // 2. เรียกแค่ไฟล์เนื้อหา (ไม่ต้อง ob_start, ไม่ต้องเรียก layout)
         // เดี๋ยวโค้ดท้ายไฟล์มันจะดึงหน้านี้ไปใส่ใน Layout ให้เองครับ
         include VIEW_PATH . '/guest/products_list.php';
         break;
-    case 'contact':
     case 'gallery':
+        $title = "แกลเลอรี - Bangkok Spa Academy";
+        ob_start();
+        include VIEW_PATH . '/guest/gallery.php';
+        $content = ob_get_clean();
+        include "../app/views/layouts/main_layout.php";
+        exit;
+        break;
+
+    case 'contact':
+        $title = "ติดต่อเรา - Bangkok Spa Academy";
+
+        // Handle Form Submission
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            require_once APP_PATH . '/helpers/EmailHelper.php';
+
+            $name = trim($_POST['name'] ?? '');
+            $email = trim($_POST['email'] ?? '');
+            $message = trim($_POST['message'] ?? '');
+
+            if (!empty($name) && !empty($email) && !empty($message)) {
+                $subject = "ข้อความใหม่จากหน้าติดต่อเรา: " . $name;
+                $body = "<h3>ข้อความจากผู้เยี่ยมชมเว็บไซต์</h3>";
+                $body .= "<p><strong>ชื่อ:</strong> " . htmlspecialchars($name) . "</p>";
+                $body .= "<p><strong>อีเมล:</strong> " . htmlspecialchars($email) . "</p>";
+                $body .= "<p><strong>ข้อความ:</strong><br>" . nl2br(htmlspecialchars($message)) . "</p>";
+
+                // Use email from .env
+                $adminEmail = $_ENV['SMTP_FROM_EMAIL'] ;
+                
+                if (sendEmail($adminEmail, 'Admin', $subject, $body)) {
+                        $_SESSION['success'] = "ขอบคุณสำหรับข้อความ เราจะติดต่อกลับโดยเร็วที่สุด";
+                } else {
+                        $_SESSION['error'] = "เกิดข้อผิดพลาดในการส่งข้อความ โปรดลองอีกครั้ง";
+                }
+            } else {
+                $_SESSION['error'] = "กรุณากรอกข้อมูลให้ครบถ้วน";
+            }
+
+            header("Location: index.php?action=contact");
+            exit;
+        }
+
+        ob_start();
+        include VIEW_PATH . '/guest/contact.php';
+        $content = ob_get_clean();
+        include "../app/views/layouts/main_layout.php";
+        exit;
+        break;
+
     case 'about':
         $title = "เกี่ยวกับเรา - Bangkok Spa Academy";
 
@@ -422,7 +508,7 @@ switch ($action) {
         $stmt = $pdo->prepare("SELECT * FROM course WHERE course_id = ? AND is_active = 1");
         $stmt->execute([$course_id]);
         $course = $stmt->fetch(PDO::FETCH_ASSOC);
-        $sqlSch = "SELECT * FROM course_schedule WHERE course_id = ? AND start_at >= CURDATE() ORDER BY start_at ASC LIMIT 1";
+        $sqlSch = "SELECT * FROM course_schedule WHERE course_id = ? AND start_at > CURDATE() ORDER BY start_at ASC LIMIT 1";
         $stmtSch = $pdo->prepare($sqlSch);
         $stmtSch->execute([$course_id]);
         $schedule = $stmtSch->fetch(PDO::FETCH_ASSOC);
@@ -850,9 +936,14 @@ switch ($action) {
             $pdo->beginTransaction();
 
             // ตรวจสอบ Capacity และดึง course_id ที่ถูกต้อง
-            $stmt = $pdo->prepare("SELECT capacity, course_id FROM course_schedule WHERE schedule_id = ?");
+            $stmt = $pdo->prepare("SELECT capacity, course_id, start_at FROM course_schedule WHERE schedule_id = ?");
             $stmt->execute([$schedule_id]);
             $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // [ตรวจสอบเงื่อนไขเวลา] ต้องสมัครก่อนวันเริ่มเรียน (Start Date > Today)
+            if ($schedule && $schedule['start_at'] <= date('Y-m-d')) {
+                throw new Exception("ขออภัย หมดเขตรับสมัครแล้ว (ต้องสมัครก่อนวันเริ่มเรียน)");
+            }
 
             // [ตรวจสอบอีกครั้ง] ถ้า capacity เป็น 0 หรือ schedule ไม่พบ
             if (!$schedule || $schedule['capacity'] <= 0) {
@@ -860,13 +951,12 @@ switch ($action) {
             }
 
             // [เพิ่ม] ตรวจสอบการสมัครซ้ำ (Duplicate Booking Check)
-            // อนุญาตให้สมัครใหม่ได้เฉพาะกรณีสถานะเป็น Rejected หรือ Cancelled เท่านั้น
+            // เช็คเฉพาะรอบเรียนนี้ (schedule_id) อนุญาตให้สมัคร Course เดิมในรอบอื่นได้
             $chkBooking = $pdo->prepare("SELECT b.status FROM booking b 
-                                         JOIN course_schedule s ON b.schedule_id = s.schedule_id 
-                                         WHERE b.user_id = ? AND s.course_id = ? 
+                                         WHERE b.user_id = ? AND b.schedule_id = ? 
                                          AND b.status NOT IN ('Rejected', 'Cancelled') 
                                          LIMIT 1");
-            $chkBooking->execute([$user_id, $schedule['course_id']]);
+            $chkBooking->execute([$user_id, $schedule_id]);
             $existing = $chkBooking->fetch(PDO::FETCH_ASSOC);
 
             if ($existing) {
@@ -2107,7 +2197,11 @@ switch ($action) {
             if (!empty($_FILES['promotion_picture']['name'])) {
                 $target_dir = "assets/images/promotions/";
                 if (!file_exists($target_dir)) mkdir($target_dir, 0777, true);
-                $file_name = time() . '_p_' . basename($_FILES["promotion_picture"]["name"]);
+                
+                // [Modified] Generate random filename to avoid issues with special characters/spaces
+                $ext = pathinfo($_FILES["promotion_picture"]["name"], PATHINFO_EXTENSION);
+                $file_name = time() . '_p_' . bin2hex(random_bytes(8)) . '.' . $ext;
+                
                 $picture_path = $target_dir . $file_name;
                 move_uploaded_file($_FILES["promotion_picture"]["tmp_name"], $picture_path);
             }
@@ -2135,6 +2229,180 @@ switch ($action) {
         }
         break;
 
+    // ----------------------------------------------------
+    // EDIT & TOGGLE PRODUCT PROMOTION
+    // ----------------------------------------------------
+    case 'staff_promotion_product_edit':
+        if (!isset($_SESSION['role_id'])) exit;
+        require_once APP_PATH . '/models/Promotion.php';
+        $promoModel = new Promotion($pdo);
+        $id = $_GET['id'] ?? 0;
+        $promo = $promoModel->getProductPromotionById($id);
+        
+        if (!$promo) {
+            header('Location: index.php?action=staff_promotion_list');
+            exit;
+        }
+
+        // [New Condition] หากหมดอายุ ห้ามแก้ไข
+        if (strtotime($promo['end_at']) < time()) {
+            $_SESSION['error'] = 'โปรโมชั่นหมดอายุแล้ว ไม่สามารถแก้ไขได้';
+            header('Location: index.php?action=staff_promotion_list');
+            exit;
+        }
+
+        $stmt = $pdo->prepare("SELECT name FROM product WHERE product_id = ?");
+        $stmt->execute([$promo['product_id']]);
+        $prodName = $stmt->fetchColumn();
+        $promo['item_name'] = $prodName;
+
+        $content_view = VIEW_PATH . '/staff/promotions/edit_product.php';
+        require_once VIEW_PATH . '/layouts/staff_layout.php';
+        exit;
+        break;
+
+    case 'staff_promotion_product_update':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            require_once APP_PATH . '/models/Promotion.php';
+            $promoModel = new Promotion($pdo);
+            $id = $_POST['id'];
+
+            $picture_path = null;
+            if (!empty($_FILES['promotion_picture']['name'])) {
+                $target_dir = "assets/images/promotions/";
+                if (!file_exists($target_dir)) mkdir($target_dir, 0777, true);
+                $ext = pathinfo($_FILES["promotion_picture"]["name"], PATHINFO_EXTENSION);
+                $file_name = time() . '_p_upd_' . bin2hex(random_bytes(8)) . '.' . $ext;
+                $picture_path = $target_dir . $file_name;
+                move_uploaded_file($_FILES["promotion_picture"]["tmp_name"], $picture_path);
+            }
+
+            $data = [
+                'discount' => $_POST['discount'],
+                'start_at' => $_POST['start_at'],
+                'end_at' => $_POST['end_at'],
+                'visible' => $_POST['visible'],
+                'picture' => $picture_path
+            ];
+            
+            $promoModel->updateProductPromotion($id, $data);
+            header('Location: index.php?action=staff_promotion_list');
+        }
+        break;
+
+    case 'staff_promotion_product_toggle':
+        if (!isset($_SESSION['role_id'])) exit;
+        require_once APP_PATH . '/models/Promotion.php';
+        $promoModel = new Promotion($pdo);
+        $id = $_GET['id'] ?? 0;
+
+        // [New Condition] ตรวจสอบว่ามีโปรฯ และยังไม่หมดอายุ
+        $promo = $promoModel->getProductPromotionById($id);
+        if (!$promo) {
+            header('Location: index.php?action=staff_promotion_list');
+            exit;
+        }
+
+        if (strtotime($promo['end_at']) < time()) {
+            $_SESSION['error'] = 'โปรโมชั่นหมดอายุแล้ว ไม่สามารถเปิด/ปิดการมองเห็นได้';
+            header('Location: index.php?action=staff_promotion_list');
+            exit;
+        }
+
+        $current = $_GET['status'] ?? 0;
+        $newStatus = ($current == 1) ? 0 : 1;
+        $promoModel->toggleProductStatus($id, $newStatus);
+        header('Location: index.php?action=staff_promotion_list');
+        exit;
+        break;
+
+    // ----------------------------------------------------
+    // EDIT & TOGGLE COURSE PROMOTION
+    // ----------------------------------------------------
+    case 'staff_promotion_course_edit':
+        if (!isset($_SESSION['role_id'])) exit;
+        require_once APP_PATH . '/models/Promotion.php';
+        $promoModel = new Promotion($pdo);
+        $id = $_GET['id'] ?? 0;
+        $promo = $promoModel->getCoursePromotionById($id);
+        
+        if (!$promo) {
+            header('Location: index.php?action=staff_promotion_list');
+            exit;
+        }
+
+        // [New Condition] หากหมดอายุ ห้ามแก้ไข
+        if (strtotime($promo['end_at']) < time()) {
+            $_SESSION['error'] = 'โปรโมชั่นหมดอายุแล้ว ไม่สามารถแก้ไขได้';
+            header('Location: index.php?action=staff_promotion_list');
+            exit;
+        }
+
+        $stmt = $pdo->prepare("SELECT name FROM course WHERE course_id = ?");
+        $stmt->execute([$promo['course_id']]);
+        $courseName = $stmt->fetchColumn();
+        $promo['item_name'] = $courseName;
+
+        $content_view = VIEW_PATH . '/staff/promotions/edit_course.php';
+        require_once VIEW_PATH . '/layouts/staff_layout.php';
+        exit;
+        break;
+
+    case 'staff_promotion_course_update':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            require_once APP_PATH . '/models/Promotion.php';
+            $promoModel = new Promotion($pdo);
+            $id = $_POST['id'];
+
+            $picture_path = null;
+            if (!empty($_FILES['promotion_picture']['name'])) {
+                $target_dir = "assets/images/promotions/";
+                if (!file_exists($target_dir)) mkdir($target_dir, 0777, true);
+                $ext = pathinfo($_FILES["promotion_picture"]["name"], PATHINFO_EXTENSION);
+                $file_name = time() . '_c_upd_' . bin2hex(random_bytes(8)) . '.' . $ext;
+                $picture_path = $target_dir . $file_name;
+                move_uploaded_file($_FILES["promotion_picture"]["tmp_name"], $picture_path);
+            }
+
+            $data = [
+                'discount' => $_POST['discount'],
+                'start_at' => $_POST['start_at'],
+                'end_at' => $_POST['end_at'],
+                'visible' => $_POST['visible'],
+                'picture' => $picture_path
+            ];
+            
+            $promoModel->updateCoursePromotion($id, $data);
+            header('Location: index.php?action=staff_promotion_list');
+        }
+        break;
+
+    case 'staff_promotion_course_toggle':
+        if (!isset($_SESSION['role_id'])) exit;
+        require_once APP_PATH . '/models/Promotion.php';
+        $promoModel = new Promotion($pdo);
+        $id = $_GET['id'] ?? 0;
+
+        // [New Condition] ตรวจสอบว่ามีโปรฯ และยังไม่หมดอายุ
+        $promo = $promoModel->getCoursePromotionById($id);
+        if (!$promo) {
+            header('Location: index.php?action=staff_promotion_list');
+            exit;
+        }
+
+        if (strtotime($promo['end_at']) < time()) {
+            $_SESSION['error'] = 'โปรโมชั่นหมดอายุแล้ว ไม่สามารถเปิด/ปิดการมองเห็นได้';
+            header('Location: index.php?action=staff_promotion_list');
+            exit;
+        }
+
+        $current = $_GET['status'] ?? 0;
+        $newStatus = ($current == 1) ? 0 : 1;
+        $promoModel->toggleCourseStatus($id, $newStatus);
+        header('Location: index.php?action=staff_promotion_list');
+        exit;
+        break;
+
     // 4. หน้าฟอร์มเพิ่มโปรฯ หลักสูตร
     case 'staff_promotion_course_create':
         if (!isset($_SESSION['role_id'])) exit;
@@ -2157,7 +2425,11 @@ switch ($action) {
             if (!empty($_FILES['promotion_picture']['name'])) {
                 $target_dir = "assets/images/promotions/";
                 if (!file_exists($target_dir)) mkdir($target_dir, 0777, true);
-                $file_name = time() . '_c_' . basename($_FILES["promotion_picture"]["name"]);
+                
+                // [Modified] Generate random filename to avoid issues with special characters/spaces
+                $ext = pathinfo($_FILES["promotion_picture"]["name"], PATHINFO_EXTENSION);
+                $file_name = time() . '_c_' . bin2hex(random_bytes(8)) . '.' . $ext;
+                
                 $picture_path = $target_dir . $file_name;
                 move_uploaded_file($_FILES["promotion_picture"]["tmp_name"], $picture_path);
             }
@@ -2647,7 +2919,7 @@ switch ($action) {
         arsort($revenueByType);
 
 
-        // [แก้ไขจุดที่ 3] 2.3 รายได้ตามรายชื่อคอร์ส (Top 10 Courses)
+        
         $sqlRevCourse = "SELECT c.name, SUM(c.price) as total
                          FROM booking b
                          JOIN course_schedule cs ON b.schedule_id = cs.schedule_id
@@ -2657,7 +2929,7 @@ switch ($action) {
                          GROUP BY c.course_id ORDER BY total DESC LIMIT 10";
         $revByCourse = $pdo->query($sqlRevCourse)->fetchAll(PDO::FETCH_ASSOC);
 
-        // 2.4 รายได้ตามรายชื่อสินค้า
+       
         $sqlRevProduct = "SELECT pr.name, SUM(si.line_total) as total
                           FROM sale_item si
                           JOIN sale s ON si.sale_id = s.sale_id
@@ -2666,10 +2938,6 @@ switch ($action) {
                           GROUP BY pr.product_id ORDER BY total DESC LIMIT 10";
         $revByProduct = $pdo->query($sqlRevProduct)->fetchAll(PDO::FETCH_ASSOC);
 
-
-        // =============================================
-        // 3. Top Ranking (Count) - สำหรับกราฟเก่า
-        // =============================================
         $sqlTopC = "SELECT c.name, COUNT(b.booking_id) as total 
                     FROM booking b
                     JOIN course_schedule cs ON b.schedule_id = cs.schedule_id
@@ -2686,7 +2954,7 @@ switch ($action) {
                     GROUP BY p.product_id ORDER BY total DESC LIMIT 5";
         $topProducts = $pdo->query($sqlTopP)->fetchAll(PDO::FETCH_ASSOC);
 
-        // % Pie Chart รวม
+        
         $pctCourse = ($grandTotal > 0) ? ($totalCourse / $grandTotal) * 100 : 0;
         $pctProduct = ($grandTotal > 0) ? ($totalProduct / $grandTotal) * 100 : 0;
 
@@ -2702,15 +2970,19 @@ switch ($action) {
 
 
     default:
-        // หน้า Home (Default)
+    case 'home':
+        // ดึงโปรโมชั่นสำหรับแสดงหน้าโฮม
+        require_once APP_PATH . '/models/Promotion.php';
+        $promoModel = new Promotion($pdo);
+        $homepagePromotions = $promoModel->getActivePromotionsForHomepage();
+       
         $title = "Bangkok Spa Academy - สถาบันวิชาชีพสปา กรุงเทพ";
         include VIEW_PATH . '/guest/home.php';
         break;
 }
 
-// เก็บเนื้อหา HTML ทั้งหมดไว้ในตัวแปร $content
+
 $content = ob_get_clean();
 
-// 3. เรียก Main Layout มาแสดงผล (เอา Navbar + Content + Footer มารวมกัน)
 include VIEW_PATH . '/layouts/main_layout.php';
 exit;

@@ -2435,7 +2435,7 @@ a.link-action,
 .print-layout .logo {
     font-weight: 700;
     font-size: 24px;
-    color: #2c7be5;
+    color: #006400;
     margin-bottom: 5px;
 }
 
@@ -2550,4 +2550,55 @@ a.link-action,
     margin-left: auto; /* Push to right */
     padding: 0 5px;
     line-height: normal;
+}
+
+/* ==========================================================================
+   PROMOTION ACTION BUTTONS
+   ========================================================================== */
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px; /* Smooth rounded square */
+    margin: 0 3px;
+    color: #fff !important;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    border: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.action-btn i {
+    font-size: 14px;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.btn-edit {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.btn-edit:hover {
+    background: linear-gradient(135deg, #5dade2, #3498db);
+}
+
+.btn-toggle-on {
+    background: linear-gradient(135deg, #e74c3c, #c0392b); /* Red for turning off (hiding) */
+}
+
+.btn-toggle-on:hover {
+    background: linear-gradient(135deg, #ec7063, #e74c3c);
+}
+
+.btn-toggle-off {
+    background: linear-gradient(135deg, #2ecc71, #27ae60); /* Green for turning on (showing) */
+}
+
+.btn-toggle-off:hover {
+    background: linear-gradient(135deg, #58d68d, #2ecc71);
 }

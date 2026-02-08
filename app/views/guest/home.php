@@ -34,6 +34,25 @@ $ratingStats = $stmtStats->fetch(PDO::FETCH_ASSOC);
     </div>
 </header>
 
+<?php if (!empty($homepagePromotions)): ?>
+<section class="promotion-section" style="padding: 40px 0; background-color: #fff5f5;">
+    <div class="container" style="text-align: center;">
+        <h2 style="margin-bottom: 30px; font-size: 2rem; color: #8b5e3c;">โปรโมชั่นแนะนำ</h2>
+        <div class="promotion-grid" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+            <?php foreach ($homepagePromotions as $promo): 
+                // Fix for special characters/spaces in filenames
+                $picPath = $promo['picture'];
+                $picUrl = implode('/', array_map('rawurlencode', explode('/', $picPath)));
+            ?>
+                <div class="promo-card" style="flex: 0 1 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 10px; overflow: hidden; transition: transform 0.3s ease;">
+                    <img src="<?= $picUrl ?>" alt="Promotion" style="width: 100%; height: auto; display: block;">
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
+
 <section class="highlights-section">
     <div class="container">
         <div class="highlights-grid">

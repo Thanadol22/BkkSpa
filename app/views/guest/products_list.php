@@ -19,7 +19,7 @@ if (!empty($products)) {
 }
 ?>
 
-<div class="page-banner" style="background-image: url('assets/images/logo/banner4.png');">
+<div class="page-banner" style="background-image: url('assets/images/logo/banner8.png');">
 </div>
 
 <div class="container course-page-container pt-5">
@@ -92,8 +92,30 @@ if (!empty($products)) {
                                 </div>
 
                                 <div class="bsa-card-price">
-                                    ฿<?= number_format($p['price'], 0) ?>
-                                    <span class="price-label">ราคา/ชิ้น</span>
+                                    <?php 
+                                        $price = floatval($p['price']);
+                                        $discount = floatval($p['discount'] ?? 0);
+                                    ?>
+                                    
+                                    <?php if ($discount > 0): 
+                                        $finalPrice = $price * ((100 - $discount) / 100);
+                                    ?>
+                                        <div>
+                                            <span style="font-size: 14px; color: #999; text-decoration: line-through; margin-right: 5px;">
+                                                ฿<?= number_format($price, 0) ?>
+                                            </span>
+                                            <span style="font-size: 12px; background: #dc3545; color: white; padding: 2px 6px; border-radius: 4px;">
+                                                -<?= intval($discount) ?>%
+                                            </span>
+                                        </div>
+                                        <div style="color: #d63031; font-weight: bold;">
+                                            ฿<?= number_format($finalPrice, 0) ?>
+                                            <span class="price-label">ราคา/ชิ้น</span>
+                                        </div>
+                                    <?php else: ?>
+                                        ฿<?= number_format($price, 0) ?>
+                                        <span class="price-label">ราคา/ชิ้น</span>
+                                    <?php endif; ?>
                                 </div>
 
 

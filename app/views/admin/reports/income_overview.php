@@ -10,7 +10,7 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
 
 <div class="section-header">
     <div>
-        <h2 class="section-title">รายงานสรุปรายได้ (Revenue Reports)</h2>
+        <h2 class="section-title">รายงานสรุปรายได้ </h2>
         <p style="color:#666; font-size:14px; margin-top:5px;">
             ข้อมูลย้อนหลังแบบ <strong style="color:#16a34a;"><?= $currentFilterName ?></strong>
         </p>
@@ -28,7 +28,7 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
         <div>
             <p style="font-size:12px; color:#666;">รายได้รวมทั้งหมด</p>
             <h3 style="font-size:22px; color:#333; margin:5px 0;"><?= number_format($grandTotal) ?></h3>
-            <span style="font-size:11px; color:#f59e0b;">บาท (THB)</span>
+            <span style="font-size:11px; color:#f59e0b;">บาท </span>
         </div>
     </div>
     <div class="stat-card" style="padding:15px; border-left: 4px solid #3b82f6;">
@@ -51,7 +51,7 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
 <div class="report-grid-container">
 
     <div class="report-card">
-        <h3 class="report-card-title">สินค้าและคอร์สยอดนิยม (Popular Items)</h3>
+        <h3 class="report-card-title">สินค้าและคอร์สยอดนิยม</h3>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
             <div>
@@ -107,7 +107,7 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
     </div>
 
     <div class="report-card">
-        <h3 class="report-card-title">แนวโน้มรายได้รวม (Total Revenue Trend)</h3>
+        <h3 class="report-card-title">แนวโน้มรายได้รวม</h3>
         <div class="v-chart-wrapper" style="height: 220px;">
             <?php
             $maxRev = 0;
@@ -155,7 +155,7 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
 
         <div class="report-card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 class="report-card-title" style="margin:0;">ตารางรายละเอียด (Detailed Data)</h3>
+                <h3 class="report-card-title" style="margin:0;">ตารางรายละเอียด</h3>
                 <a href="index.php?action=admin_report_pdf&filter=<?= $filter ?>" target="_blank" class="btn-filter" style="font-size:12px; padding:5px 10px; border:1px solid #ddd;">
                     <i class="fas fa-print"></i> พิมพ์ PDF
                 </a>
@@ -195,7 +195,7 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
         </div>
     </div>
     <div class="report-card">
-        <h3 class="report-card-title">สัดส่วนรายได้แยกตามประเภท (Revenue by Category Type)</h3>
+        <h3 class="report-card-title">สัดส่วนรายได้แยกตามประเภท</h3>
 
         <?php if (empty($revenueByType) || $grandTotal == 0): ?>
             <p style="color:#999; text-align:center; padding: 30px;">ไม่มีข้อมูลรายได้ในช่วงเวลานี้</p>
@@ -263,13 +263,13 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
 
 
     <div class="report-card">
-        <h3 class="report-card-title">สร้างรายได้สูงสุดตามรายชื่อ (Top Revenue by Item)</h3>
+        <h3 class="report-card-title">สร้างรายได้สูงสุดตามรายชื่อ </h3>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
 
             <div>
                 <h4 style="font-size:13px; color:#3b82f6; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:5px;">
-                    <i class="fas fa-graduation-cap"></i> รายได้จากคอร์สเรียน (Top 10 Courses)
+                    <i class="fas fa-graduation-cap"></i> รายได้จากคอร์สเรียน (10 อันดับแรก)
                 </h4>
                 <?php if (empty($revByCourse)): ?>
                     <p style="color:#999; font-size:13px;">ไม่มีข้อมูล</p>
@@ -296,7 +296,7 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
 
             <div>
                 <h4 style="font-size:13px; color:#10b981; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:5px;">
-                    <i class="fas fa-pump-soap"></i> รายได้จากผลิตภัณฑ์ (Top 10 Products)
+                    <i class="fas fa-pump-soap"></i> รายได้จากผลิตภัณฑ์ (10 อันดับแรก)
                 </h4>
                 <?php if (empty($revByProduct)): ?>
                     <p style="color:#999; font-size:13px;">ไม่มีข้อมูล</p>
