@@ -1429,20 +1429,6 @@ ul {
     color: #333;
 }
 
-/* Input Fields (Overwrite ให้เหมือนรูป) */
-.input-field {
-    background-color: #FAFAFA;
-    /* พื้นหลังเทาอ่อนมากๆ */
-    border: 1px solid #E0E0E0;
-    color: #333;
-}
-
-.input-field:focus {
-    border-color: #4CAF50;
-    /* เส้นสีเขียวเมื่อพิมพ์ */
-    background-color: #fff;
-}
-
 /* Save Button */
 .btn-save {
     background-color: #32CD32;
@@ -3546,8 +3532,8 @@ ul {
 .social-btn.line { background-color: #E08931; }
 
 
-/* Right Column */
-.contact-form-card {
+/* Right Column - Renamed to fix login conflict */
+.guest-contact-form-card {
     flex: 0 0 450px;
     background: white;
     padding: 50px 40px;
@@ -3555,7 +3541,7 @@ ul {
     box-shadow: 0 10px 40px rgba(0,0,0,0.08);
 }
 
-.contact-form-card h3 {
+.guest-contact-form-card h3 {
     text-align: center;
     font-size: 2rem;
     margin-bottom: 40px;
@@ -3563,11 +3549,11 @@ ul {
     font-weight: 600;
 }
 
-.form-group {
+.guest-contact-form-card .form-group {
     margin-bottom: 30px;
 }
 
-.form-group label {
+.guest-contact-form-card .form-group label {
     display: block;
     font-size: 1rem;
     margin-bottom: 8px;
@@ -3575,8 +3561,8 @@ ul {
     font-weight: 600;
 }
 
-.form-group input,
-.form-group textarea {
+.guest-contact-form-card .form-group input,
+.guest-contact-form-card .form-group textarea {
     width: 100%;
     padding: 10px 0;
     border: none;
@@ -3588,8 +3574,8 @@ ul {
     resize: none;
 }
 
-.form-group input:focus,
-.form-group textarea:focus {
+.guest-contact-form-card .form-group input:focus,
+.guest-contact-form-card .form-group textarea:focus {
     border-bottom-color: #DA8236;
 }
 
@@ -3658,7 +3644,7 @@ ul {
         flex-direction: column;
         align-items: center;
     }
-    .contact-form-card {
+    .guest-contact-form-card {
         width: 100%;
         max-width: 100%;
         padding: 30px 20px;
@@ -3785,8 +3771,8 @@ ul {
 .social-btn.line { background-color: #E08931; }
 
 
-/* Right Column */
-.contact-form-card {
+/* Right Column - Renamed to fix login conflict */
+.guest-contact-form-card {
     flex: 0 0 450px;
     background: white;
     padding: 50px 40px;
@@ -3794,7 +3780,7 @@ ul {
     box-shadow: 0 10px 40px rgba(0,0,0,0.08);
 }
 
-.contact-form-card h3 {
+.guest-contact-form-card h3 {
     text-align: center;
     font-size: 2rem;
     margin-bottom: 40px;
@@ -3802,11 +3788,11 @@ ul {
     font-weight: 600;
 }
 
-.form-group {
+.guest-contact-form-card .form-group {
     margin-bottom: 30px;
 }
 
-.form-group label {
+.guest-contact-form-card .form-group label {
     display: block;
     font-size: 1rem;
     margin-bottom: 8px;
@@ -3814,8 +3800,8 @@ ul {
     font-weight: 600;
 }
 
-.form-group input,
-.form-group textarea {
+.guest-contact-form-card .form-group input,
+.guest-contact-form-card .form-group textarea {
     width: 100%;
     padding: 10px 0;
     border: none;
@@ -3827,8 +3813,8 @@ ul {
     resize: none;
 }
 
-.form-group input:focus,
-.form-group textarea:focus {
+.guest-contact-form-card .form-group input:focus,
+.guest-contact-form-card .form-group textarea:focus {
     border-bottom-color: #DA8236;
 }
 
@@ -3905,7 +3891,7 @@ ul {
         flex-direction: column;
         align-items: center;
     }
-    .contact-form-card {
+    .guest-contact-form-card {
         width: 100%;
         max-width: 100%;
         padding: 30px 20px;

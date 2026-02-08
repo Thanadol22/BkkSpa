@@ -46,7 +46,7 @@
             </div>
 
             <!-- Right Side: Form -->
-            <div class="contact-form-card">
+            <div class="guest-contact-form-card">
                 <h3>ส่งข้อความ</h3>
                 
                 <?php if (isset($_SESSION['success'])): ?>

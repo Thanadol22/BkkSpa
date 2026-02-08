@@ -1,7 +1,0 @@
-.env
-vendor/
-storage/logs/
-storage/temp/
-public/uploads/
-.DS_Store
-Thumbs.db
