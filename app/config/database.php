@@ -8,10 +8,10 @@ class Database
 
     private function __construct()
     {
-        $host    = 'localhost';
-        $db      = 'dbbkkspa';   // ชื่อฐานข้อมูลที่เราออกแบบไว้
-        $user    = 'root';       // ค่า default ของ XAMPP
-        $pass    = '';           // ถ้าไม่ได้ตั้งรหัสผ่าน ให้เว้นว่าง
+        $host    = $_ENV['DB_HOST'] ?? 'localhost';
+        $db      = $_ENV['DB_DATABASE'] ?? 'dbbkkspa';
+        $user    = $_ENV['DB_USERNAME'] ?? 'root';
+        $pass    = $_ENV['DB_PASSWORD'] ?? '';
         $charset = 'utf8mb4';
 
         $dsn = "mysql:host={$host};dbname={$db};charset={$charset}";
