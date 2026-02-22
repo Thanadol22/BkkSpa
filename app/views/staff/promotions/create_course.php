@@ -86,7 +86,7 @@
 </div>
 <script>
     // ฟังก์ชันเลือกทั้งหมด สำหรับ Checkbox
-    function toggleSelectAll(source) {
+    function toggleSelectAllProducts(source) {
         // หา input ทุกตัวที่มีคลาส course-checkbox
         const checkboxes = document.querySelectorAll('.course-checkbox');
 
@@ -94,5 +94,37 @@
         checkboxes.forEach(cb => {
             cb.checked = source.checked;
         });
+    }
+
+    // ฟังก์ชัน Preview รูปภาพ (New)
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                // แสดงรูปตัวอย่าง
+                var img = document.getElementById('img-preview');
+                img.src = e.target.result;
+                img.style.display = 'inline-block';
+
+                // อัปเดตข้อความให้รู้ว่าเลือกไฟล์แล้ว
+                const container = input.closest('.upload-area');
+                const title = container.querySelector('.upload-title');
+                const desc = container.querySelector('.upload-desc');
+                const btn = container.querySelector('.btn-choose-file');
+
+                if(title && desc && btn) {
+                    title.innerHTML = '<i class="fas fa-check-circle" style="color:#28a745;"></i> อัปโหลดเรียบร้อย';
+                    desc.innerText = input.files[0].name; // แสดงชื่อไฟล์
+                    desc.style.color = '#28a745';
+                    desc.style.fontWeight = 'bold';
+                    
+                    btn.innerText = 'เปลี่ยนรูปภาพ';
+                    btn.style.backgroundColor = '#6c757d';
+                    container.style.borderColor = '#28a745'; // เปลี่ยนสีขอบเป็นเขียว
+                    container.style.backgroundColor = '#f0fff4'; // เปลี่ยนพื้นหลังให้อ่อนๆ
+                }
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
     }
 </script>

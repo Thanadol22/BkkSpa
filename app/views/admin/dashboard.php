@@ -49,6 +49,10 @@
             <div class="action-icon"><i class="fas fa-user-tie"></i></div>
             <span>จัดการพนักงาน</span>
         </a>
+        <a href="index.php?action=admin_manage_member" class="btn-action-card">
+            <div class="action-icon"><i class="fas fa-users"></i></div>
+            <span>จัดการสมาชิก</span>
+        </a>
         <a href="index.php?action=admin_reports" class="btn-action-card">
             <div class="action-icon"><i class="fas fa-file-invoice-dollar"></i></div>
             <span>ดูรายงานสรุป</span>

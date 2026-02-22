@@ -19,10 +19,42 @@
                     <div style="padding: 10px;">
                         <h4 style="margin: 0 0 5px; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><?= htmlspecialchars($p['name']) ?></h4>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color: #2c3e50; font-weight: bold;">฿<?= number_format($p['price'], 0) ?></span>
+                            <?php if (isset($p['discount']) && $p['discount'] > 0): 
+                                $finalPrice = $p['price'] * (1 - ($p['discount'] / 100));
+                            ?>
+                                <div>
+                                    <span style="color: #999; text-decoration: line-through; font-size: 12px;">฿<?= number_format($p['price'], 0) ?></span>
+                                    <span style="color: #e74c3c; font-weight: bold;">฿<?= number_format($finalPrice, 0) ?></span>
+                                </div>
+                            <?php else: ?>
+                                <span style="color: #2c3e50; font-weight: bold;">฿<?= number_format($p['price'], 0) ?></span>
+                            <?php endif; ?>
+
                             <span style="font-size: 12px; color: <?= $p['stock'] > 0 ? '#28a745' : '#dc3545' ?>">
                                 คงเหลือ: <?= $p['stock'] ?>
                             </span>
+                        </div>
+                        <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;" onclick="event.stopPropagation()">
+                            <!-- Quantity Selector (Left) -->
+                            <div class="qty-selector" style="background: #e9f7ef; border-radius: 25px; padding: 5px; display: flex; align-items: center; border: 1px solid #d4efdf;">
+                                <button type="button" onclick="adjustCardQty(<?= $p['product_id'] ?>, -1)" 
+                                        style="width: 32px; height: 32px; border-radius: 50%; border: none; background: #58d68d; color: white; font-size: 18px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">
+                                    -
+                                </button>
+                                <input type="number" id="card_qty_<?= $p['product_id'] ?>" value="1" min="1" 
+                                       onclick="this.select()"
+                                       style="width: 40px; text-align: center; border: none; background: transparent; font-weight: bold; font-size: 16px; color: #1d8348; outline: none; -moz-appearance: textfield;">
+                                <button type="button" onclick="adjustCardQty(<?= $p['product_id'] ?>, 1)" 
+                                        style="width: 32px; height: 32px; border-radius: 50%; border: none; background: #58d68d; color: white; font-size: 18px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">
+                                    +
+                                </button>
+                            </div>
+
+                            <!-- Add Button (Right) -->
+                            <button type="button" onclick="addToCartFromCard(<?= $p['product_id'] ?>)" 
+                                    style="background: #fff; border: 2px solid #000; border-radius: 25px; padding: 5px 15px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 42px; transition: all 0.2s;">
+                                <i class="fas fa-shopping-cart"></i> เพิ่ม
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -52,7 +84,9 @@
                             <td style="padding: 10px;">
                                 <div style="font-weight: 600; font-size: 14px;"><?= htmlspecialchars($item['name']) ?></div>
                                 <div style="font-size: 12px; color: #666;">
-                                    <?= number_format($item['final_unit_price'], 2) ?> x <?= $item['qty'] ?>
+                                    <?= number_format($item['final_unit_price'], 2) ?> x 
+                                    <i class="fas fa-minus-circle" onclick="decreaseQty(<?= $id ?>)" style="cursor: pointer; color: #f39c12; margin-right: 2px;"></i>
+                                    <?= $item['qty'] ?>
                                     <?php if($item['discount_percent'] > 0): ?>
                                         <span style="color: #e74c3c; font-size: 10px;">(-<?= $item['discount_percent'] ?>%)</span>
                                     <?php endif; ?>
@@ -101,6 +135,22 @@ document.getElementById('posSearch').addEventListener('keyup', function() {
     });
 });
 
+function adjustCardQty(id, delta) {
+    let input = document.getElementById('card_qty_' + id);
+    let val = parseInt(input.value) || 1;
+    val += delta;
+    if (val < 1) val = 1;
+    input.value = val;
+}
+
+function addToCartFromCard(id) {
+    let input = document.getElementById('card_qty_' + id);
+    let qty = parseInt(input.value) || 1;
+    addToCart(id, qty).then(success => {
+        if(success) input.value = 1;
+    });
+}
+
 // Load Cart Function (Update UI without refresh)
 function loadCart() {
     fetch('index.php?action=staff_pos_get_cart&t=' + new Date().getTime())
@@ -112,12 +162,12 @@ function loadCart() {
 }
 
 // Add to Cart AJAX
-function addToCart(productId) {
+function addToCart(productId, qty = 1) {
     let formData = new FormData();
     formData.append('product_id', productId);
-    formData.append('qty', 1);
+    formData.append('qty', qty);
 
-    fetch('index.php?action=staff_pos_add', {
+    return fetch('index.php?action=staff_pos_add', {
         method: 'POST',
         body: formData
     })
@@ -125,15 +175,28 @@ function addToCart(productId) {
     .then(data => {
         if (data.status === 'success') {
             loadCart();
+            return true;
         } else {
             alert(data.msg);
+            return false;
         }
     })
     .catch(error => {
         console.error('Error:', error);
         // Fallback if JSON fails
         location.reload(); 
+        return false;
     });
+}
+
+// Decrease Qty (AJAX)
+function decreaseQty(id) {
+    fetch('index.php?action=staff_pos_decrease&ajax=1&id=' + id)
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') loadCart();
+    })
+    .catch(() => location.reload());
 }
 
 // Remove from Cart (AJAX)
@@ -165,6 +228,16 @@ window.addEventListener('pageshow', function(event) {
 </script>
 
 <style>
+    /* Remove Number Arrow/Spinners */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
+
     .btn-checkout.disabled {
         background: #ccc !important;
         pointer-events: none;

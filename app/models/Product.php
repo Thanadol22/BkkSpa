@@ -83,34 +83,6 @@ class Product {
         
         $promo = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // --- ส่วน Debug (จะแสดงข้อความตอนกดขาย) ---
-        if (!$promo) {
-            // ถ้าหาไม่เจอ ให้ลองเช็คดูว่ามีโปรโมชั่นของสินค้านี้อยู่บ้างไหม (ไม่สนเวลา)
-            $checkSql = "SELECT * FROM promotion_product WHERE product_id = ?";
-            $checkStmt = $this->db->prepare($checkSql);
-            $checkStmt->execute([$product_id]);
-            $allPromos = $checkStmt->fetchAll(PDO::FETCH_ASSOC);
-
-            echo "<div style='background:yellow; padding:10px; border:1px solid orange;'>";
-            echo "<strong>⚠️ Debug: ไม่พบโปรโมชั่นที่ใช้งานได้</strong><br>";
-            echo "กำลังค้นหา Product ID: <strong>$product_id</strong><br>";
-            echo "เวลาปัจจุบันที่ใช้เช็ค: <strong>$now</strong><br>";
-            
-            if (count($allPromos) > 0) {
-                echo "<br><strong>แต่พบข้อมูลในตาราง promotion_product ดังนี้:</strong><br>";
-                foreach ($allPromos as $p) {
-                    echo "- ID: {$p['promotion_p_id']}, Start: {$p['start_at']}, End: {$p['end_at']}, Visible: {$p['visible']}<br>";
-                    if ($p['visible'] == 0) echo "  (❌ ปิดใช้งานอยู่)<br>";
-                    if ($p['start_at'] > $now) echo "  (❌ ยังไม่ถึงเวลาเริ่ม)<br>";
-                    if ($p['end_at'] < $now) echo "  (❌ หมดอายุแล้ว)<br>";
-                }
-            } else {
-                echo "<br>❌ ไม่มีข้อมูลโปรโมชั่นของสินค้านี้ในตาราง promotion_product เลย";
-            }
-            echo "</div><br>";
-        }
-        // ------------------------------------------
-
         return $promo;
     }
 

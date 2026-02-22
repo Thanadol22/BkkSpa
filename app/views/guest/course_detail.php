@@ -56,7 +56,23 @@ if ($schedule) {
 
         <div class="detail-info">
             
-            
+            <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 15px; color: #666;">
+                <span style="font-weight: bold; font-size: 1.1rem; margin-right: 5px;"><?= number_format($ratingStats['rating'], 1) ?>/5</span>
+                <div style="color: gold; margin-right: 10px;">
+                    <?php 
+                    for($i=1; $i<=5; $i++) {
+                        if($i <= round($ratingStats['rating'])) {
+                            echo '<i class="fas fa-star"></i>';
+                        } else {
+                            echo '<i class="far fa-star"></i>';
+                        }
+                    }
+                    ?>
+                </div>
+                <a href="#reviews-section" style="color: #666; text-decoration: none;">
+                    รีวิวจากผู้เรียน (<?= $ratingStats['count'] ?>) <i class="fas fa-angle-double-right"></i>
+                </a>
+            </div>
 
             <h2 class="detail-title"><?= htmlspecialchars($course['name']) ?></h2>
 
@@ -127,6 +143,76 @@ if ($schedule) {
                     <a href="index.php?action=login" class="btn-apply-large">
                         สมัคร (เข้าสู่ระบบ)
                     </a>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Review Section -->
+    <div id="reviews-section" style="margin-top: 50px; padding: 0 10px;">
+        <div style="display: flex; align-items: baseline; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+            <h3 style="font-size: 1.5rem; color: #333; margin: 0; margin-right: 15px;">รีวิวจากผู้เรียน (<?= $ratingStats['count'] ?>)</h3>
+        </div>
+
+        <div class="review-list">
+            <?php if (empty($reviews)): ?>
+                <p style="color: #999; text-align: center; padding: 20px;">ยังไม่มีรีวิวสำหรับหลักสูตรนี้</p>
+            <?php else: ?>
+                <?php foreach($reviews as $r): ?>
+                <div class="review-item" style="display: flex; gap: 20px; margin-bottom: 30px; border-bottom: 1px solid #f9f9f9; padding-bottom: 20px;">
+                    <div class="reviewer-avatar" style="flex-shrink: 0;">
+                        <div style="width: 60px; height: 60px; background-color: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #b71c1c; overflow: hidden;">
+                             <i class="far fa-user"></i>
+                        </div>
+                    </div>
+                    <div class="review-content" style="flex-grow: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; flex-wrap: wrap; margin-bottom: 5px;">
+                            <h4 style="margin: 0; font-size: 18px; color: #333; margin-right: 10px; max-width: 100%;" class="text-truncate"><?= htmlspecialchars($r['full_name']) ?></h4>
+                            <div class="stars" style="color: #ffc107 !important; font-size: 16px; display: flex; align-items: center; white-space: nowrap;">
+                                <?php 
+                                for($i=1; $i<=5; $i++) {
+                                    echo ($i <= $r['rating']) ? '<i class="fas fa-star mr-1"></i>' : '<i class="fas fa-star mr-1" style="color: #e0e0e0;"></i>';
+                                }
+                                ?>
+                            </div>
+                        </div>
+                        <div style="font-size: 13px; color: #999; margin-bottom: 10px;">
+                            <?= date('d M Y', strtotime($r['created_at'])) ?>
+                        </div>
+                        <p style="color: #333; line-height: 1.6; margin: 0; font-size: 15px;">
+                            <?= nl2br(htmlspecialchars($r['comment'])) ?>
+                        </p>
+                        <?php if(!empty($r['review_image'])): ?>
+                            <div style="margin-top: 10px;">
+                                <img src="<?= htmlspecialchars($r['review_image']) ?>" 
+                                     style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid #eee; cursor: pointer;"
+                                     onclick="window.open(this.src, '_blank')">
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                
+                <?php if ($totalReviewPages > 1): ?>
+                    <div style="text-align: center; margin-top: 30px; display: flex; justify-content: center; gap: 10px;">
+                        <?php if ($currentReviewPage > 1): ?>
+                            <a href="index.php?action=course_detail&id=<?= $course['course_id'] ?>&page=<?= $currentReviewPage - 1 ?>#reviews-section" class="btn-quick-green" style="background: #fff; color: #333; border: 1px solid #ddd; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-weight: 500;">
+                                <i class="fas fa-chevron-left"></i> ก่อนหน้า
+                            </a>
+                        <?php endif; ?>
+                        
+                        <?php for ($i = 1; $i <= $totalReviewPages; $i++): ?>
+                            <a href="index.php?action=course_detail&id=<?= $course['course_id'] ?>&page=<?= $i ?>#reviews-section" class="btn-quick-green" style="background: <?= $i == $currentReviewPage ? '#c49a7c' : '#fff' ?>; color: <?= $i == $currentReviewPage ? '#fff' : '#333' ?>; border: 1px solid <?= $i == $currentReviewPage ? '#c49a7c' : '#ddd' ?>; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-weight: 500;">
+                                <?= $i ?>
+                            </a>
+                        <?php endfor; ?>
+                        
+                        <?php if ($currentReviewPage < $totalReviewPages): ?>
+                            <a href="index.php?action=course_detail&id=<?= $course['course_id'] ?>&page=<?= $currentReviewPage + 1 ?>#reviews-section" class="btn-quick-green" style="background: #fff; color: #333; border: 1px solid #ddd; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-weight: 500;">
+                                ถัดไป <i class="fas fa-chevron-right"></i>
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 <?php endif; ?>
             <?php endif; ?>
         </div>

@@ -7,6 +7,30 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* CSS สำหรับ PDF/Print */
+        @page {
+            /* กำหนด margin เป็น 0 เพื่อซ่อน Header/Footer ของ Browser */
+            margin: 0;
+            size: A4;
+        }
+        
+        @media print {
+            body {
+                margin-top: 15mm;
+                margin-bottom: 15mm;
+                margin-left: 15mm;
+                margin-right: 15mm;
+            }
+            .report-section {
+                margin-top: 20px;
+                padding-top: 10px; /* เพิ่ม padding เพื่อดันเนื้อหาลงมา */
+                page-break-inside: auto;
+            }
+            /* บังคับไม่ให้ table head ถูกตัด */
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
+            tr { page-break-inside: avoid; }
+        }
+
         body {
             font-family: 'Sarabun', sans-serif;
             padding: 40px;
@@ -23,9 +47,15 @@
         }
 
         .report-section {
-            margin-bottom: 30px;
-            break-inside: avoid;
-            page-break-inside: avoid;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            /* เอา break-inside: avoid ออกเพื่อให้เนื้อหาแบ่งหน้าได้ถ้าจำเป็น */
+        }
+        
+        /* ป้องกันหัวข้อหลุดไปอยู่ท้ายหน้าคนเดียว */
+        h3 {
+            break-after: avoid;
+            page-break-after: avoid;
         }
 
         h3 {
@@ -65,8 +95,10 @@
             border-bottom: 1px solid #eee;
         }
 
+        .table-w100 th.text-right,
+        .table-w100 td.text-right,
         .text-right {
-            text-align: right;
+            text-align: right !important;
         }
 
         .font-bold {
@@ -157,7 +189,7 @@
 <body onload="window.print()">
 
     <div class="header-pdf">
-        <h1 style="margin:0; font-size:24px;">รายงานสรุปรายได้ (Income Report)</h1>
+        <h1 style="margin:0; font-size:24px;">รายงานสรุปรายได้</h1>
         <p style="margin:5px 0;">Bangkok Spa Academy</p>
         <p style="margin:5px 0; font-size:14px; color:#666;">ข้อมูล ณ วันที่: <?= date('d/m/Y H:i') ?></p>
         <p style="margin:5px 0; font-size:14px; color:#16a34a; font-weight:bold;">
@@ -166,7 +198,7 @@
     </div>
 
     <div class="report-section">
-        <h3>1. สรุปยอดรวม (Total Overview)</h3>
+        <h3>1. สรุปยอดรวม </h3>
         <div class="pie-container">
             <div class="pie-chart" style="background: conic-gradient(#16a34a 0% <?= $pctCourse ?>%, #dcfce7 <?= $pctCourse ?>% 100%);"></div>
 
@@ -187,7 +219,7 @@
     </div>
 
     <div class="report-section">
-        <h3>2. สัดส่วนรายได้แยกตามประเภท (Revenue by Category)</h3>
+        <h3>2. สัดส่วนรายได้แยกตามประเภท</h3>
         <?php if (empty($revenueByType) || $grandTotal == 0): ?>
             <p style="text-align:center; color:#999;">- ไม่มีข้อมูล -</p>
         <?php else: ?>
@@ -240,7 +272,7 @@
     </div>
 
     <div class="report-section">
-        <h3>3. รายได้สูงสุดตามรายชื่อ (Top Revenue by Item)</h3>
+        <h3>3. รายได้สูงสุดตามรายชื่อ</h3>
         <div class="grid-2">
             <div class="col">
                 <h4 style="color:#3b82f6;">คอร์สเรียนทำเงินสูงสุด</h4>
@@ -291,7 +323,7 @@
     </div>
 
     <div class="report-section">
-        <h3>4. ตารางรายละเอียด (Detailed Data)</h3>
+        <h3>4. ตารางรายละเอียด</h3>
         <table class="table-w100">
             <thead>
                 <tr>

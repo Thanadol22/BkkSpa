@@ -74,16 +74,29 @@ if ($schedule) {
                     </div>
                 </div>
 
-                <div class="booking-total-row">
-                    <span>ยอดชำระ</span>
-                    <span class="total-price"><?= number_format($course['price'], 0) ?> บาท</span>
+                <div class="booking-total-row" style="align-items: flex-start;">
+                    <span style="margin-top: 5px;">ยอดชำระ</span>
+                    <?php 
+                    $finalPrice = $course['price'];
+                    if (isset($activePromo) && $activePromo) {
+                        $discount = $activePromo['discount'];
+                        $finalPrice = $course['price'] * (1 - ($discount / 100));
+                    ?>
+                        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+                            <span style="font-size: 14px; text-decoration: line-through; color: #999;">฿<?= number_format($course['price'], 0) ?></span>
+                            <span class="total-price" style="color: #e74c3c; font-size: 24px;">฿<?= number_format($finalPrice, 0) ?></span>
+                            <div style="font-size: 12px; color: #e74c3c; font-weight: bold;">(ส่วนลด <?= intval($discount) ?>%)</div>
+                        </div>
+                    <?php } else { ?>
+                        <span class="total-price">฿<?= number_format($course['price'], 0) ?></span>
+                    <?php } ?>
                 </div>
 
                 <form action="index.php?action=process_enroll" method="POST" enctype="multipart/form-data" class="booking-upload-form">
 
                     <input type="hidden" name="course_id" value="<?= $course['course_id'] ?>">
                     <input type="hidden" name="schedule_id" value="<?= $schedule['schedule_id'] ?>">
-                    <input type="hidden" name="amount" value="<?= $course['price'] ?>">
+                    <input type="hidden" name="amount" value="<?= $finalPrice ?>">
 
                     <?php if ($is_full): ?>
                         <p style="color: red; text-align: center; padding: 15px 0;">**ไม่สามารถยืนยันการจองได้ เนื่องจากที่นั่งเต็ม**</p>

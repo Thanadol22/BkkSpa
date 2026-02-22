@@ -12,11 +12,33 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
     <div>
         <h2 class="section-title">รายงานสรุปรายได้ </h2>
         <p style="color:#666; font-size:14px; margin-top:5px;">
-            ข้อมูลย้อนหลังแบบ <strong style="color:#16a34a;"><?= $currentFilterName ?></strong>
+            ข้อมูลแบบ <strong style="color:#16a34a;"><?= $currentFilterName ?></strong>
         </p>
     </div>
 
-    <div class="filter-group">
+    <div class="filter-group" style="display: flex; gap: 10px; align-items: center;">
+        <form action="index.php" method="GET" style="display: flex; gap: 10px; align-items: center; margin: 0;">
+            <input type="hidden" name="action" value="admin_reports">
+            <input type="hidden" name="filter" value="<?= $filter ?>">
+            
+            <?php if ($filter == 'daily'): ?>
+                <input type="date" name="date" value="<?= htmlspecialchars($selected_date) ?>" class="form-control" style="width: auto; padding: 5px 10px;" onchange="this.form.submit()">
+            <?php elseif ($filter == 'yearly'): ?>
+                <select name="year" class="form-control" style="width: auto; padding: 5px 10px;" onchange="this.form.submit()">
+                    <?php 
+                    $currentYear = date('Y');
+                    for($y = $currentYear; $y >= $currentYear - 5; $y--): 
+                    ?>
+                        <option value="<?= $y ?>" <?= ($selected_year == $y) ? 'selected' : '' ?>><?= $y + 543 ?></option>
+                    <?php endfor; ?>
+                </select>
+            <?php else: // monthly ?>
+                <input type="month" name="month" value="<?= htmlspecialchars($selected_month) ?>" class="form-control" style="width: auto; padding: 5px 10px;" onchange="this.form.submit()">
+            <?php endif; ?>
+        </form>
+
+        <div style="border-left: 1px solid #ddd; height: 30px; margin: 0 5px;"></div>
+
         <a href="index.php?action=admin_reports&filter=daily" class="btn-filter <?= ($filter == 'daily') ? 'active' : '' ?>">รายวัน</a>
         <a href="index.php?action=admin_reports&filter=monthly" class="btn-filter <?= ($filter == 'monthly') ? 'active' : '' ?>">รายเดือน</a>
         <a href="index.php?action=admin_reports&filter=yearly" class="btn-filter <?= ($filter == 'yearly') ? 'active' : '' ?>">รายปี</a>
@@ -156,7 +178,7 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
         <div class="report-card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <h3 class="report-card-title" style="margin:0;">ตารางรายละเอียด</h3>
-                <a href="index.php?action=admin_report_pdf&filter=<?= $filter ?>" target="_blank" class="btn-filter" style="font-size:12px; padding:5px 10px; border:1px solid #ddd;">
+                <a href="index.php?action=admin_report_pdf&filter=<?= $filter ?>&date=<?= $selected_date ?>&month=<?= $selected_month ?>&year=<?= $selected_year ?>" target="_blank" class="btn-filter" style="font-size:12px; padding:5px 10px; border:1px solid #ddd;">
                     <i class="fas fa-print"></i> พิมพ์ PDF
                 </a>
             </div>

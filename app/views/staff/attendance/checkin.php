@@ -43,9 +43,6 @@
                             <i class="fas fa-check-circle"></i> บันทึกแล้ว
                         </span>
                     <?php endif; ?>
-                    <span class="course-time">
-                        <i class="far fa-clock"></i> <?= date('H:i', strtotime($sch['start_at'])) ?> - <?= date('H:i', strtotime($sch['end_at'])) ?>
-                    </span>
                 </h3>
 
                 <form method="POST" action="index.php?action=staff_attendance_save">
@@ -57,23 +54,20 @@
                         
                         <div class="attendance-box-header">
                             <span class="attendance-col-name">รายชื่อนักเรียน</span>
-                            <?php if (!$isCheckedAlready): ?>
                             <div class="check-all-wrapper">
                                 <label for="check-all-<?= $sch['schedule_id'] ?>" class="check-all-label">เลือกทั้งหมด</label>
                                 <input type="checkbox" id="check-all-<?= $sch['schedule_id'] ?>" 
                                        class="check-all-box custom-checkbox" 
                                        data-target="list-<?= $sch['schedule_id'] ?>">
                             </div>
-                            <?php endif; ?>
                         </div>
 
                         <div id="list-<?= $sch['schedule_id'] ?>">
                             <?php if (!empty($sch['students'])): ?>
                                 <?php foreach ($sch['students'] as $stu): 
                                     $isChecked = ($stu['attendance_status'] == 1) ? 'checked' : '';
-                                    $disabledAttr = $isCheckedAlready ? 'disabled' : '';
                                 ?>
-                                    <div class="student-row" style="<?= $isCheckedAlready ? 'opacity: 0.8; background-color: #f9fafb;' : '' ?>">
+                                    <div class="student-row">
                                         <span class="student-name">
                                             <?= htmlspecialchars($stu['full_name']) ?>
                                             <?php if($isCheckedAlready): ?>
@@ -82,7 +76,7 @@
                                                 </span>
                                             <?php endif; ?>
                                         </span>
-                                        <input type="checkbox" name="present_users[]" value="<?= $stu['user_id'] ?>" <?= $isChecked ?> <?= $disabledAttr ?>
+                                        <input type="checkbox" name="present_users[]" value="<?= $stu['user_id'] ?>" <?= $isChecked ?>
                                                class="student-check custom-checkbox">
                                     </div>
                                 <?php endforeach; ?>
@@ -94,10 +88,10 @@
                         </div>
                     </div>
 
-                    <?php if (!empty($sch['students']) && !$isCheckedAlready): ?>
+                    <?php if (!empty($sch['students'])): ?>
                         <div style="text-align: right; margin-top: 20px;">
                             <button type="submit" class="btn-save-attendance">
-                                <i class="fas fa-save" style="margin-right: 5px;"></i> บันทึกการเช็กชื่อ
+                                <i class="fas fa-save" style="margin-right: 5px;"></i> <?= $isCheckedAlready ? 'บันทึกการแก้ไข' : 'บันทึกการเช็กชื่อ' ?>
                             </button>
                         </div>
                     <?php endif; ?>

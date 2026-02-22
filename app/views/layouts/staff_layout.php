@@ -8,6 +8,7 @@
 
     <link rel="stylesheet" href="assets/css/staff.css?v=<?= time() ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
         /* CSS Badge เพิ่มเติม (Inline เพื่อความชัวร์เรื่อง Cache) */
@@ -155,6 +156,29 @@
                     .catch(e => console.warn('Mail worker silent fail'));
             }, 2000);
         });
+
+        // [New] Global Session Alert (SweetAlert2)
+        <?php if (!empty($_SESSION['success'])): ?>
+            Swal.fire({
+                icon: 'success',
+                title: 'สำเร็จ!',
+                text: '<?= addslashes($_SESSION['success']) ?>',
+                confirmButtonColor: '#28a745',
+                confirmButtonText: 'ตกลง'
+            });
+            <?php unset($_SESSION['success']); ?>
+        <?php endif; ?>
+
+        <?php if (!empty($_SESSION['error'])): ?>
+            Swal.fire({
+                icon: 'error',
+                title: 'ขออภัย',
+                text: '<?= addslashes($_SESSION['error']) ?>',
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: 'ตกลง'
+            });
+            <?php unset($_SESSION['error']); ?>
+        <?php endif; ?>
     </script>
 </body>
 </html>

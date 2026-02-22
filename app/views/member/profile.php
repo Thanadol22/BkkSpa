@@ -62,7 +62,7 @@
                                     } elseif ($course['status'] == 'RefundPending') {
                                         $statusColor = '#17a2b8';
                                         $statusText = 'รอคืนเงิน';
-                                    } elseif ($course['status'] == 'Refunded') {
+                                    } elseif ($course['status'] == 'Refunded' || $course['status'] == 'Cancelled') {
                                         $statusColor = '#006400';
                                         $statusText = 'คืนเงินแล้ว';
                                     } elseif ($course['status'] == 'Rejected') {

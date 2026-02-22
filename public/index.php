@@ -281,9 +281,10 @@ switch ($action) {
         // [เพิ่ม] ดึงข้อมูลการจองของผู้ใช้ (ถ้าล็อกอิน) - เช็คตาม schedule_id
         $userBookingMap = [];
         if (isset($_SESSION['user_id'])) {
+            // [แก้ไข] เพิ่ม 'Refunded' ในรายการที่ไม่นับเป็นการจอง (เพื่อให้สมัครใหม่ได้)
             $chkSql = "SELECT b.schedule_id, b.status 
                        FROM booking b 
-                       WHERE b.user_id = ? AND b.status NOT IN ('Rejected', 'Cancelled')";
+                       WHERE b.user_id = ? AND b.status NOT IN ('Rejected', 'Cancelled', 'Refunded')";
             $chkStmt = $pdo->prepare($chkSql);
             $chkStmt->execute([$_SESSION['user_id']]);
             $rows = $chkStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -340,9 +341,10 @@ switch ($action) {
             // Check existing booking (เฉพาะรอบเรียนที่กำลังจะแสดงนี้)
             $existingBookingStatus = null;
             if (isset($_SESSION['user_id']) && $schedule) {
+                // [แก้ไข] เพิ่ม 'Refunded' เพื่อให้สมัครใหม่ได้เมื่อถูกคืนเงินแล้ว
                 $chkSql = "SELECT b.status FROM booking b 
                            WHERE b.user_id = ? AND b.schedule_id = ? 
-                           AND b.status NOT IN ('Rejected', 'Cancelled') 
+                           AND b.status NOT IN ('Rejected', 'Cancelled', 'Refunded') 
                            LIMIT 1";
                 $chkStmt = $pdo->prepare($chkSql);
                 $chkStmt->execute([$_SESSION['user_id'], $schedule['schedule_id']]);
@@ -351,6 +353,31 @@ switch ($action) {
                     $existingBookingStatus = $exRes['status'];
                 }
             }
+            
+            // [NEW] Rating & Reviews Logic
+            require_once APP_PATH . '/models/Review.php';
+            $reviewModel = new Review($pdo);
+            $ratingStats = $reviewModel->getCourseRatingStats($course_id);
+            
+            // Pagination for reviews
+            $reviewsPerPage = 5;
+            $currentReviewPage = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+            $offset = ($currentReviewPage - 1) * $reviewsPerPage;
+            
+            $sqlLimit = "SELECT r.*, u.full_name
+                         FROM review_course r
+                         JOIN user u ON r.user_id = u.user_id
+                         WHERE r.course_id = :course_id
+                         ORDER BY r.created_at DESC LIMIT :limit OFFSET :offset";
+            $stmtLimit = $pdo->prepare($sqlLimit);
+            $stmtLimit->bindValue(':course_id', $course_id, PDO::PARAM_INT);
+            $stmtLimit->bindValue(':limit', $reviewsPerPage, PDO::PARAM_INT);
+            $stmtLimit->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmtLimit->execute();
+            $reviews = $stmtLimit->fetchAll(PDO::FETCH_ASSOC);
+            
+            $totalReviews = $ratingStats['count'];
+            $totalReviewPages = ceil($totalReviews / $reviewsPerPage);
             
             $title = $course['name'] . " - Bangkok Spa Academy";
             include VIEW_PATH . '/guest/course_detail.php';
@@ -515,6 +542,12 @@ switch ($action) {
         $stmtUser = $pdo->prepare("SELECT * FROM user WHERE user_id = ?");
         $stmtUser->execute([$_SESSION['user_id']]);
         $user = $stmtUser->fetch(PDO::FETCH_ASSOC);
+        
+        // [New] Fetch Active Promotion for Display
+        require_once APP_PATH . '/models/Promotion.php';
+        $promoModel = new Promotion($pdo);
+        $activePromo = $promoModel->getActiveCoursePromotion($course_id);
+
         if ($course && $schedule) {
             include VIEW_PATH . '/member/booking_form.php';
         } else {
@@ -695,9 +728,9 @@ switch ($action) {
             }
             // ====================================================
 
-            // --- 2. อัปเดตฐานข้อมูล (เปลี่ยนสถานะเป็น Refunded) ---
+            // --- 2. อัปเดตฐานข้อมูล (เปลี่ยนสถานะเป็น Cancelled ตามที่ตกลงเพื่อให้อนุญาตจองใหม่ได้) ---
             $sql = "UPDATE booking SET 
-                    status = 'Refunded',
+                    status = 'Cancelled',
                     refund_slip = :slip,
                     refund_date = NOW()
                     WHERE booking_id = :bid";
@@ -945,6 +978,26 @@ switch ($action) {
                 throw new Exception("ขออภัย หมดเขตรับสมัครแล้ว (ต้องสมัครก่อนวันเริ่มเรียน)");
             }
 
+            // [New] Recalculate Amount (Security Check)
+            $stmtCourse = $pdo->prepare("SELECT price FROM course WHERE course_id = ?");
+            $stmtCourse->execute([$course_id]);
+            $courseData = $stmtCourse->fetch(PDO::FETCH_ASSOC);
+            
+            if ($courseData) {
+                require_once APP_PATH . '/models/Promotion.php';
+                $promoModel = new Promotion($pdo);
+                $activePromo = $promoModel->getActiveCoursePromotion($course_id);
+                
+                $finalAmount = $courseData['price'];
+                if ($activePromo) {
+                     $discountVal = ($courseData['price'] * $activePromo['discount']) / 100;
+                     $finalAmount = $courseData['price'] - $discountVal;
+                }
+                
+                // Override user input amount
+                $amount = $finalAmount;
+            }
+
             // [ตรวจสอบอีกครั้ง] ถ้า capacity เป็น 0 หรือ schedule ไม่พบ
             if (!$schedule || $schedule['capacity'] <= 0) {
                 throw new Exception("ขออภัย ที่นั่งเต็มแล้ว หรือไม่พบรอบเรียนนี้");
@@ -954,13 +1007,14 @@ switch ($action) {
             // เช็คเฉพาะรอบเรียนนี้ (schedule_id) อนุญาตให้สมัคร Course เดิมในรอบอื่นได้
             $chkBooking = $pdo->prepare("SELECT b.status FROM booking b 
                                          WHERE b.user_id = ? AND b.schedule_id = ? 
-                                         AND b.status NOT IN ('Rejected', 'Cancelled') 
+                                         AND b.status NOT IN ('Rejected', 'Cancelled', 'Refunded') 
                                          LIMIT 1");
             $chkBooking->execute([$user_id, $schedule_id]);
             $existing = $chkBooking->fetch(PDO::FETCH_ASSOC);
 
             if ($existing) {
-                throw new Exception("คุณได้สมัครหลักสูตรนี้ไปแล้ว (สถานะ: " . $existing['status'] . ") สามารถสมัครใหม่ได้เมื่อถูกปฏิเสธหรือยกเลิกเท่านั้น");
+                // เพิ่มข้อความแสดงสถานะให้ชัดเจนขึ้น
+                throw new Exception("คุณได้สมัครหลักสูตรนี้ไปแล้ว (สถานะ: " . $existing['status'] . ") สามารถสมัครใหม่ได้เมื่อถูกปฏิเสธ, ยกเลิก หรือคืนเงินเท่านั้น");
             }
 
             // Support multiple slip images (1-3)
@@ -1102,6 +1156,13 @@ switch ($action) {
             if ($delta !== 0) {
                 $courseModel->updateScheduleCapacity($schedule_id, $delta);
             }
+
+            // อัปเดตข้อมูลผู้อนุมัติในตาราง payment ถ้าสถานะเป็น Confirmed
+            if ($new_status === 'Confirmed') {
+                $stmtPayment = $pdo->prepare("UPDATE payment SET verified_by = ?, verified_at = NOW() WHERE booking_id = ?");
+                $stmtPayment->execute([$_SESSION['user_id'], $booking_id]);
+            }
+
             $pdo->commit();
             header('Location: index.php?action=staff_booking_detail&id=' . $booking_id);
             exit;
@@ -1511,6 +1572,12 @@ switch ($action) {
             $bookingModel->updateBookingStatus($booking_id, $new_status);
             if ($delta !== 0) {
                 $courseModel->updateScheduleCapacity($schedule_id, $delta);
+            }
+
+            // อัปเดตข้อมูลผู้อนุมัติในตาราง payment ถ้าสถานะเป็น Confirmed
+            if ($new_status === 'Confirmed') {
+                $stmtPayment = $pdo->prepare("UPDATE payment SET verified_by = ?, verified_at = NOW() WHERE booking_id = ?");
+                $stmtPayment->execute([$_SESSION['user_id'], $booking_id]);
             }
 
             $pdo->commit();
@@ -2043,6 +2110,30 @@ switch ($action) {
         $sales = $saleModel->getSalesByDate($filter_date);
         $total_daily = $saleModel->getTotalDailyAmount($filter_date);
 
+        // ดึงยอดขายคอร์สเรียน
+        $sqlCourseSales = "SELECT p.payment_id, p.booking_id, p.amount, p.receipt_number, p.receipt_date,
+                                  u.full_name as customer_name, c.name as course_name,
+                                  staff.full_name as staff_name
+                           FROM payment p
+                           JOIN booking b ON p.booking_id = b.booking_id
+                           JOIN user u ON b.user_id = u.user_id
+                           JOIN course_schedule s ON b.schedule_id = s.schedule_id
+                           JOIN course c ON s.course_id = c.course_id
+                           LEFT JOIN user staff ON p.verified_by = staff.user_id
+                           WHERE b.status = 'Confirmed' AND DATE(p.receipt_date) = :date
+                           ORDER BY p.receipt_date DESC";
+        $stmt = $pdo->prepare($sqlCourseSales);
+        $stmt->execute(['date' => $filter_date]);
+        $courseSales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // คำนวณยอดรวมคอร์สเรียน
+        $total_course_daily = 0;
+        foreach ($courseSales as $cs) {
+            $total_course_daily += $cs['amount'];
+        }
+
+        $total_daily += $total_course_daily;
+
         // เรียกไฟล์ View ชื่อ sale_list.php ตามที่ขอ
         $content_view = VIEW_PATH . '/staff/sales/sale_list.php';
         require_once VIEW_PATH . '/layouts/staff_layout.php';
@@ -2209,7 +2300,24 @@ switch ($action) {
             // รับค่า product_id[]
             $product_ids = $_POST['product_id'];
 
-            if (is_array($product_ids)) {
+            // [New] ตรวจสอบ product_ids ว่ามีค่าไหม (กัน error)
+            if (!empty($product_ids) && is_array($product_ids)) {
+                
+                // [New] Check Overlap Before Insert
+                foreach ($product_ids as $pid) {
+                    if ($promoModel->checkProductOverlap($pid, $_POST['start_at'], $_POST['end_at'])) {
+                        // ดึงชื่อสินค้าที่ซ้ำ
+                        $pName = "ไม่ระบุ";
+                        try {
+                            $pName = $pdo->query("SELECT name FROM product WHERE product_id = $pid")->fetchColumn();
+                        } catch(Exception $e){}
+
+                        $_SESSION['error'] = "ไม่สามารถบันทึกได้: พบช่วงเวลาโปรโมชั่นซ้อนทับสำหรับสินค้า '$pName'";
+                        header('Location: index.php?action=staff_promotion_product_create');
+                        exit; 
+                    }
+                }
+
                 // ✅ วนลูปบันทึกทีละสินค้า
                 foreach ($product_ids as $pid) {
                     $data = [
@@ -2224,7 +2332,8 @@ switch ($action) {
                     $promoModel->createProductPromotion($data);
                 }
             }
-
+            // แจ้งเตือนสําเร็จ
+            $_SESSION['success'] = "เพิ่มโปรโมชั่นสินค้าเรียบร้อยแล้ว";
             header('Location: index.php?action=staff_promotion_list');
         }
         break;
@@ -2440,6 +2549,21 @@ switch ($action) {
                 $course_ids = [$course_ids];
             }
 
+            // [New] Validation check BEFORE Insert
+            foreach ($course_ids as $cid) {
+                 if ($promoModel->checkCourseOverlap($cid, $_POST['start_at'], $_POST['end_at'])) {
+                    // ดึงชื่อหลักสูตรที่ซ้ำ
+                    $cName = "ไม่ระบุ";
+                    try {
+                        $cName = $pdo->query("SELECT name FROM course WHERE course_id = $cid")->fetchColumn(); 
+                    } catch(Exception $e){}
+                    
+                    $_SESSION['error'] = "ไม่สามารถบันทึกได้: พบช่วงเวลาโปรโมชั่นซ้อนทับสำหรับหลักสูตร '$cName'";
+                    header('Location: index.php?action=staff_promotion_course_create');
+                    exit; 
+                }
+            }
+
             foreach ($course_ids as $cid) {
                 $data = [
                     'user_id' => $_SESSION['user_id'],
@@ -2452,7 +2576,9 @@ switch ($action) {
                 ];
                 $promoModel->createCoursePromotion($data);
             }
-
+            
+            // แจ้งเตือนสำเร็จ
+            $_SESSION['success'] = "เพิ่มโปรโมชั่นหลักสูตรเรียบร้อยแล้ว";
             header('Location: index.php?action=staff_promotion_list');
         }
         break;
@@ -2468,7 +2594,7 @@ switch ($action) {
 
         // 1. นับจำนวนคน
         $staff_count = $pdo->query("SELECT COUNT(*) FROM user WHERE role_id = 2")->fetchColumn();
-        $member_count = $pdo->query("SELECT COUNT(*) FROM user WHERE role_id = 1")->fetchColumn();
+        $member_count = $pdo->query("SELECT COUNT(*) FROM user WHERE role_id = 3")->fetchColumn();
 
         // 2. คำนวณยอดขายวันนี้ (รวมทั้งสินค้า และ คอร์สที่อนุมัติแล้ว)
         $today = date('Y-m-d');
@@ -2584,6 +2710,85 @@ switch ($action) {
         break;
 
     // =============================================
+    // ADMIN: Manage Member (จัดการสมาชิก)
+    // =============================================
+    case 'admin_manage_member':
+        if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
+            header('Location: index.php?action=login');
+            exit;
+        }
+        // ดึงข้อมูล User ที่มี Role_id = 3 (สมาชิก)
+        $sql = "SELECT * FROM user WHERE role_id = 3 ORDER BY user_id DESC";
+        $member_list = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+
+        $content_view = VIEW_PATH . '/admin/member/list.php';
+        require_once VIEW_PATH . '/layouts/admin_layout.php';
+        exit;
+        break;
+
+    case 'admin_member_edit':
+        if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
+            header('Location: index.php?action=login');
+            exit;
+        }
+        $member = [];
+        if (isset($_GET['id'])) {
+            $stmt = $pdo->prepare("SELECT * FROM user WHERE user_id = ? AND role_id = 3");
+            $stmt->execute([$_GET['id']]);
+            $member = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+        $content_view = VIEW_PATH . '/admin/member/edit.php';
+        require_once VIEW_PATH . '/layouts/admin_layout.php';
+        exit;
+        break;
+
+    case 'admin_member_save':
+        if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
+            header('Location: index.php?action=login');
+            exit;
+        }
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $user_id = $_POST['user_id'] ?? '';
+            $full_name = $_POST['full_name'];
+            $email = $_POST['email'];
+            $phone = $_POST['phone'];
+            $username = $_POST['username'];
+            $password = $_POST['password'];
+
+            if ($user_id) { // UPDATE
+                // ถ้ามีการกรอก Password ใหม่ ให้แก้ด้วย
+                if (!empty($password)) {
+                    $sql = "UPDATE user SET full_name=?, email=?, phone=?, username=?, password=? WHERE user_id=? AND role_id=3";
+                    $params = [$full_name, $email, $phone, $username, password_hash($password, PASSWORD_DEFAULT), $user_id];
+                } else {
+                    $sql = "UPDATE user SET full_name=?, email=?, phone=?, username=? WHERE user_id=? AND role_id=3";
+                    $params = [$full_name, $email, $phone, $username, $user_id];
+                }
+                $pdo->prepare($sql)->execute($params);
+            }
+            header('Location: index.php?action=admin_manage_member');
+            exit;
+        }
+        break;
+
+    case 'admin_member_toggle_status':
+        if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 1) {
+            header('Location: index.php?action=login');
+            exit;
+        }
+        if (isset($_GET['id']) && isset($_GET['status'])) {
+            $user_id = $_GET['id'];
+            $new_status = $_GET['status']; // รับค่า 0 (ปิด) หรือ 1 (เปิด)
+
+            // อัปเดตสถานะ is_active
+            $stmt = $pdo->prepare("UPDATE user SET is_active = ? WHERE user_id = ? AND role_id = 3");
+            $stmt->execute([$new_status, $user_id]);
+        }
+        header('Location: index.php?action=admin_manage_member');
+        exit;
+        break;
+
+    // =============================================
     // STAFF: POS (Point of Sale) & ตะกร้าสินค้า
     // =============================================
 
@@ -2596,8 +2801,8 @@ switch ($action) {
         require_once APP_PATH . '/models/Product.php';
         $productModel = new Product($pdo);
 
-        // ดึงสินค้าทั้งหมด
-        $products = $productModel->getActiveProducts();
+        // ดึงสินค้าทั้งหมด (พร้อมส่วนลด)
+        $products = $productModel->getActiveProductsWithPromo();
 
         // เตรียมข้อมูลตะกร้า
         $cart = $_SESSION['pos_cart'] ?? [];
@@ -2684,6 +2889,31 @@ switch ($action) {
         exit;
         break;
 
+    // 8. ลดจำนวนสินค้า
+    case 'staff_pos_decrease':
+        $product_id = $_GET['id'] ?? 0;
+        if (isset($_SESSION['pos_cart'][$product_id])) {
+            if ($_SESSION['pos_cart'][$product_id]['qty'] > 1) {
+                $_SESSION['pos_cart'][$product_id]['qty']--;
+                // Recalculate line total
+                $_SESSION['pos_cart'][$product_id]['line_total'] = 
+                    $_SESSION['pos_cart'][$product_id]['final_unit_price'] * $_SESSION['pos_cart'][$product_id]['qty'];
+            } else {
+                // ถ้าเหลือ 1 ชิ้น กดลด -> ลบออกจากตะกร้า
+                unset($_SESSION['pos_cart'][$product_id]);
+            }
+        }
+        
+        if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
+            while (ob_get_level()) ob_end_clean();
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'success']);
+            exit;
+        }
+        header('Location: index.php?action=staff_pos');
+        exit;
+        break;
+
     // 4. เคลียร์ตะกร้า
     case 'staff_pos_clear':
         unset($_SESSION['pos_cart']);
@@ -2726,7 +2956,9 @@ switch ($action) {
                             <td style="padding: 10px;">
                                 <div style="font-weight: 600; font-size: 14px;"><?= htmlspecialchars($item['name']) ?></div>
                                 <div style="font-size: 12px; color: #666;">
-                                    <?= number_format($item['final_unit_price'], 2) ?> x <?= $item['qty'] ?>
+                                    <?= number_format($item['final_unit_price'], 2) ?> x 
+                                    <i class="fas fa-minus-circle" onclick="decreaseQty(<?= $id ?>)" style="cursor: pointer; color: #f39c12; margin-right: 2px;"></i>
+                                    <?= $item['qty'] ?>
                                     <?php if($item['discount_percent'] > 0): ?>
                                         <span style="color: #e74c3c; font-size: 10px;">(-<?= $item['discount_percent'] ?>%)</span>
                                     <?php endif; ?>
@@ -2804,6 +3036,30 @@ switch ($action) {
         exit;
         break;
 
+    // 7. ดูใบเสร็จคอร์สเรียน
+    case 'staff_course_receipt':
+        $booking_id = $_GET['id'] ?? 0;
+        
+        $sql = "SELECT p.payment_id, p.booking_id, p.amount, p.receipt_number, p.receipt_date,
+                       u.full_name as customer_name, c.name as course_name, c.price as course_price,
+                       staff.full_name as staff_name
+                FROM payment p
+                JOIN booking b ON p.booking_id = b.booking_id
+                JOIN user u ON b.user_id = u.user_id
+                JOIN course_schedule s ON b.schedule_id = s.schedule_id
+                JOIN course c ON s.course_id = c.course_id
+                LEFT JOIN user staff ON p.verified_by = staff.user_id
+                WHERE p.booking_id = ?";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$booking_id]);
+        $receiptData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$receiptData) die("Receipt not found");
+
+        require_once VIEW_PATH . '/staff/pos/course_receipt.php';
+        exit;
+        break;
+
     // =============================================
     // ADMIN: Real Reports (รายงานจาก DB จริง)
     // =============================================
@@ -2811,35 +3067,57 @@ switch ($action) {
     case 'admin_report_pdf':
 
         $filter = $_GET['filter'] ?? 'monthly';
+        $selected_date = $_GET['date'] ?? date('Y-m-d');
+        $selected_month = $_GET['month'] ?? date('Y-m');
+        $selected_year = $_GET['year'] ?? date('Y');
 
         // กำหนดตัวแปรตาม Filter
         $sqlDateFormat = "";
         $startDate = "";
-        $endDate = date('Y-m-d');
+        $endDate = "";
         $labels = [];
 
         if ($filter == 'daily') {
-            $startDate = date('Y-m-d', strtotime("-14 days"));
-            $sqlDateFormat = "%Y-%m-%d";
-            for ($i = 0; $i <= 14; $i++) {
-                $d = date('Y-m-d', strtotime($startDate . " +$i days"));
-                $labels[$d] = date('d/m/Y', strtotime($d));
+            $startDate = $selected_date;
+            $endDate = $selected_date;
+            $sqlDateFormat = "%Y-%m-%d %H:00"; // Group by hour for a single day
+            for ($i = 0; $i <= 23; $i++) {
+                $h = str_pad($i, 2, '0', STR_PAD_LEFT);
+                $labels["$selected_date $h:00"] = "$h:00";
             }
         } elseif ($filter == 'yearly') {
-            $startDate = date('Y-01-01', strtotime("-4 years"));
-            $endDate = date('Y-12-31');
-            $sqlDateFormat = "%Y";
-            for ($i = 0; $i <= 4; $i++) {
-                $y = date('Y', strtotime($startDate . " +$i years"));
-                $labels[$y] = "ปี " . ($y + 543);
-            }
-        } else {
-            $startDate = date('Y-m-01', strtotime("-11 months"));
-            $endDate = date('Y-m-t');
+            $startDate = "$selected_year-01-01";
+            $endDate = "$selected_year-12-31";
             $sqlDateFormat = "%Y-%m";
-            for ($i = 0; $i <= 11; $i++) {
-                $m = date('Y-m', strtotime($startDate . " +$i months"));
-                $labels[$m] = date('M Y', strtotime($m . "-01"));
+            
+            // ถ้าเป็นปีปัจจุบัน ให้แสดงถึงแค่เดือนปัจจุบัน
+            if ($selected_year == date('Y')) {
+                $monthsInYear = date('n');
+                $endDate = date('Y-m-t');
+            } else {
+                $monthsInYear = 12;
+            }
+            
+            for ($i = 1; $i <= $monthsInYear; $i++) {
+                $m = str_pad($i, 2, '0', STR_PAD_LEFT);
+                $labels["$selected_year-$m"] = date('M', strtotime("$selected_year-$m-01"));
+            }
+        } else { // monthly
+            $startDate = "$selected_month-01";
+            $endDate = date('Y-m-t', strtotime($startDate));
+            $sqlDateFormat = "%Y-%m-%d";
+            
+            // ถ้าเป็นเดือนปัจจุบัน ให้แสดงถึงแค่วันนี้
+            if ($selected_month == date('Y-m')) {
+                $daysInMonth = date('d');
+                $endDate = date('Y-m-d');
+            } else {
+                $daysInMonth = date('t', strtotime($startDate));
+            }
+            
+            for ($i = 1; $i <= $daysInMonth; $i++) {
+                $d = str_pad($i, 2, '0', STR_PAD_LEFT);
+                $labels["$selected_month-$d"] = "$d";
             }
         }
 

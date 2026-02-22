@@ -23,7 +23,7 @@
 
     <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 25px; border-radius: 15px; margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);">
         <div>
-            <span style="font-size: 15px; opacity: 0.9; font-weight: 300;">ยอดขายรวม (Total Sales)</span>
+            <span style="font-size: 15px; opacity: 0.9; font-weight: 300;">ยอดขายรวม</span>
             <h1 style="margin: 5px 0 0; font-size: 36px; font-weight: 700;">฿<?= number_format($total_daily, 2) ?></h1>
         </div>
         <div style="font-size: 48px; opacity: 0.2;">
@@ -31,7 +31,8 @@
         </div>
     </div>
 
-    <div class="table-responsive">
+    <h4 style="color: #555; margin-bottom: 15px; border-left: 4px solid var(--primary-green); padding-left: 10px;">รายการขายสินค้า</h4>
+    <div class="table-responsive" style="margin-bottom: 40px;">
         <table class="staff-table">
             <thead>
                 <tr>
@@ -81,6 +82,75 @@
                         <td colspan="5" style="text-align:center; padding: 50px; color:#999;">
                             <i class="fas fa-shopping-basket" style="font-size: 40px; margin-bottom: 15px; color: #eee;"></i><br>
                             ยังไม่มีรายการขายในวันนี้
+                        </td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <h4 style="color: #555; margin-bottom: 15px; border-left: 4px solid #17a2b8; padding-left: 10px;">รายการจองคอร์สเรียน</h4>
+    <div class="table-responsive">
+        <table class="staff-table">
+            <thead>
+                <tr>
+                    <th style="width: 100px;">เวลา</th>
+                    <th>เลขที่ใบเสร็จ</th>
+                    <th>ลูกค้า</th>
+                    <th>คอร์สเรียน</th>
+                    <th>ผู้อนุมัติ</th>
+                    <th style="text-align: right;">ยอดสุทธิ</th>
+                    <th style="text-align: right;">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (!empty($courseSales)): ?>
+                    <?php foreach ($courseSales as $cs): ?>
+                        <tr>
+                            <td>
+                                <span style="font-weight: 500; color: #666; background: #f8f9fa; padding: 4px 8px; border-radius: 6px;">
+                                    <?= date('H:i', strtotime($cs['receipt_date'])) ?>
+                                </span>
+                            </td>
+                            <td>
+                                <div style="font-weight: 600; color: var(--primary-green);">
+                                    <?= htmlspecialchars($cs['receipt_number']) ?>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 28px; height: 28px; background: #e2e6ea; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 8px; color: #6c757d; font-size: 12px;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <span style="color: #333;"><?= htmlspecialchars($cs['customer_name']) ?></span>
+                                </div>
+                            </td>
+                            <td>
+                                <span style="color: #555;"><?= htmlspecialchars($cs['course_name']) ?></span>
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 28px; height: 28px; background: #e2e6ea; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 8px; color: #6c757d; font-size: 12px;">
+                                        <i class="fas fa-user-tie"></i>
+                                    </div>
+                                    <span style="color: #333;"><?= htmlspecialchars($cs['staff_name'] ?? 'System') ?></span>
+                                </div>
+                            </td>
+                            <td style="text-align: right; font-weight: bold; font-size: 16px; color: #333;">
+                                ฿<?= number_format($cs['amount'], 2) ?>
+                            </td>
+                            <td style="text-align: right;">
+                                <a href="index.php?action=staff_course_receipt&id=<?= $cs['booking_id'] ?>" target="_blank" class="btn-icon" title="ดูใบเสร็จ">
+                                    <i class="fas fa-print" style="color: #17a2b8;"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="7" style="text-align:center; padding: 50px; color:#999;">
+                            <i class="fas fa-book-reader" style="font-size: 40px; margin-bottom: 15px; color: #eee;"></i><br>
+                            ยังไม่มีรายการจองคอร์สเรียนในวันนี้
                         </td>
                     </tr>
                 <?php endif; ?>

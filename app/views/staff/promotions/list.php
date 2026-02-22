@@ -15,16 +15,20 @@
         <h3 style="margin:0; font-size:20px; color:var(--primary-green);">
             <i class="fas fa-percent"></i> จัดการโปรโมชั่น
         </h3>
-        <div>
-            <a href="index.php?action=staff_promotion_product_create" class="btn-quick-green mr-2" style="background-color: #17a2b8;">
-                <i class="fas fa-box"></i> เพิ่มโปรฯ สินค้า
+        <div style="display: flex; gap: 10px;">
+            <button onclick="toggleHistory()" class="btn-quick-green" style="background-color: #6c757d; color: white; border: none;">
+                <i class="fas fa-history"></i> ประวัติโปรโมชั่น
+            </button>
+            <a href="index.php?action=staff_promotion_product_create" class="btn-quick-green" style="background-color: #17a2b8;">
+                <i class="fas fa-box"></i> เพิ่มโปรโมชั่น สินค้า
             </a>
             <a href="index.php?action=staff_promotion_course_create" class="btn-quick-green">
-                <i class="fas fa-graduation-cap"></i> เพิ่มโปรฯ หลักสูตร
+                <i class="fas fa-graduation-cap"></i> เพิ่มโปรโมชั่น หลักสูตร
             </a>
         </div>
     </div>
 
+    <!-- โปรโมชั่นสินค้า -->
     <h5 class="mb-3 text-muted"><i class="fas fa-box-open"></i> โปรโมชั่นสินค้า</h5>
     <div class="table-responsive mb-5">
         <table class="staff-table">
@@ -39,8 +43,10 @@
                 </tr>
             </thead>
             <tbody>
-                <?php if(!empty($productPromos)): ?>
-                    <?php foreach($productPromos as $p): 
+                <?php 
+                $hasActiveProductPromos = false;
+                if(!empty($productPromos)): 
+                    foreach($productPromos as $p): 
                         $img = !empty($p['promotion_p_picture']) ? $p['promotion_p_picture'] : $p['original_picture'];
                         
                         // คำนวณสถานะ
@@ -48,28 +54,32 @@
                         $startTime = strtotime($p['start_at']);
                         $endTime = strtotime($p['end_at']);
                         
+                        $isExpired = ($currentTime > $endTime);
+                        // ถ้าเป็นประวัติ (หมดอายุ) ให้ซ่อนไว้ก่อน (ใส่ class 'history-row')
+                        // ถ้ายังไม่หมดอายุ (Active / Pending / Disabled but not expired) ให้แสดงปกติ
+                        $rowClass = $isExpired ? 'history-row' : '';
+                        $rowStyle = $isExpired ? 'display: none;' : '';
+
+                        if (!$isExpired) $hasActiveProductPromos = true;
+
                         $statusBadge = '';
                         $statusText = '';
 
                         if ($p['visible'] == 0) {
-                            // ปิดใช้งาน
                             $statusBadge = 'background-color: #6c757d; color: white;';
                             $statusText = 'ปิดใช้งาน';
                         } elseif ($currentTime < $startTime) {
-                            // ยังไม่ถึงเวลาเริ่ม
                             $statusBadge = 'background-color: #ffc107; color: #212529;';
                             $statusText = 'รอเริ่มรายการ';
-                        } elseif ($currentTime > $endTime) {
-                            // หมดเวลาแล้ว
+                        } elseif ($isExpired) {
                             $statusBadge = 'background-color: #dc3545; color: white;';
                             $statusText = 'หมดอายุ';
                         } else {
-                            // ใช้งานปกติ
                             $statusBadge = 'background-color: #28a745; color: white;';
                             $statusText = 'ใช้งานอยู่';
                         }
                     ?>
-                    <tr>
+                    <tr class="<?= $rowClass ?>" style="<?= $rowStyle ?>">
                         <td>
                             <img src="<?= htmlspecialchars($img ?? 'assets/images/no-image.jpg') ?>" 
                                  style="width: 60px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #eee;">
@@ -90,7 +100,7 @@
                             </span>
                         </td>
                         <td style="text-align: center;">
-                            <?php if ($currentTime > $endTime): ?>
+                            <?php if ($isExpired): ?>
                                 <button class="action-btn" style="background-color: #ccc; cursor: not-allowed; border:none; color: #fff;" disabled title="หมดอายุแล้ว ไม่สามารถแก้ไขได้">
                                     <i class="fas fa-pen"></i>
                                 </button>
@@ -111,13 +121,16 @@
                         </td>
                     </tr>
                     <?php endforeach; ?>
-                <?php else: ?>
-                    <tr><td colspan="6" class="text-center py-4 text-muted">ไม่พบข้อมูลโปรโมชั่นสินค้า</td></tr>
+                <?php endif; ?>
+
+                <?php if (!$hasActiveProductPromos): ?>
+                    <tr class="no-data-row"><td colspan="6" class="text-center py-4 text-muted">ไม่พบข้อมูลโปรโมชั่นสินค้าที่ใช้งานอยู่</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
     </div>
 
+    <!-- โปรโมชั่นหลักสูตร -->
     <h5 class="mb-3 text-muted"><i class="fas fa-book-reader"></i> โปรโมชั่นหลักสูตร</h5>
     <div class="table-responsive">
         <table class="staff-table">
@@ -132,15 +145,22 @@
                 </tr>
             </thead>
             <tbody>
-                <?php if(!empty($coursePromos)): ?>
-                    <?php foreach($coursePromos as $c): 
+                <?php 
+                $hasActiveCoursePromos = false;
+                if(!empty($coursePromos)): 
+                    foreach($coursePromos as $c): 
                         $img = !empty($c['promotion_p_picture']) ? $c['promotion_p_picture'] : $c['original_picture'];
                         
-                        // คำนวณสถานะ
                         $currentTime = time(); 
                         $startTime = strtotime($c['start_at']);
                         $endTime = strtotime($c['end_at']);
                         
+                        $isExpired = ($currentTime > $endTime);
+                        $rowClass = $isExpired ? 'history-row' : '';
+                        $rowStyle = $isExpired ? 'display: none;' : '';
+
+                        if (!$isExpired) $hasActiveCoursePromos = true;
+
                         $statusBadge = '';
                         $statusText = '';
 
@@ -150,7 +170,7 @@
                         } elseif ($currentTime < $startTime) {
                             $statusBadge = 'background-color: #ffc107; color: #212529;';
                             $statusText = 'รอเริ่มรายการ';
-                        } elseif ($currentTime > $endTime) {
+                        } elseif ($isExpired) {
                             $statusBadge = 'background-color: #dc3545; color: white;';
                             $statusText = 'หมดอายุ';
                         } else {
@@ -158,7 +178,7 @@
                             $statusText = 'ใช้งานอยู่';
                         }
                     ?>
-                    <tr>
+                    <tr class="<?= $rowClass ?>" style="<?= $rowStyle ?>">
                         <td>
                             <img src="<?= htmlspecialchars($img ?? 'assets/images/no-image.jpg') ?>" 
                                  style="width: 60px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #eee;">
@@ -179,7 +199,7 @@
                             </span>
                         </td>
                         <td style="text-align: center;">
-                            <?php if ($currentTime > $endTime): ?>
+                            <?php if ($isExpired): ?>
                                 <button class="action-btn" style="background-color: #ccc; cursor: not-allowed; border:none; color: #fff;" disabled title="หมดอายุแล้ว ไม่สามารถแก้ไขได้">
                                     <i class="fas fa-pen"></i>
                                 </button>
@@ -200,10 +220,52 @@
                         </td>
                     </tr>
                     <?php endforeach; ?>
-                <?php else: ?>
-                    <tr><td colspan="6" class="text-center py-4 text-muted">ไม่พบข้อมูลโปรโมชั่นหลักสูตร</td></tr>
+                <?php endif; ?>
+                
+                <?php if (!$hasActiveCoursePromos): ?>
+                    <tr class="no-data-row"><td colspan="6" class="text-center py-4 text-muted">ไม่พบข้อมูลโปรโมชั่นหลักสูตรที่ใช้งานอยู่</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
     </div>
 </div>
+
+<script>
+let showHistory = false;
+
+function toggleHistory() {
+    showHistory = !showHistory;
+    const historyRows = document.querySelectorAll('.history-row');
+    const noDataRows = document.querySelectorAll('.no-data-row');
+    const btn = document.querySelector('button[onclick="toggleHistory()"]');
+
+    if (showHistory) {
+        // แสดงประวัติ
+        historyRows.forEach(row => {
+            row.style.display = 'table-row';
+        });
+        // ซ่อนข้อความ "ไม่พบข้อมูล..." เพราะเราอาจจะเจอข้อมูลในประวัติแล้ว
+        noDataRows.forEach(row => {
+            row.style.display = 'none'; 
+        });
+        
+        btn.innerHTML = '<i class="fas fa-history"></i> ซ่อนประวัติ';
+        btn.classList.add('active'); // อาจจะใส่ style เพิ่มถ้าต้องการ
+    } else {
+        // ซ่อนประวัติ
+        historyRows.forEach(row => {
+            row.style.display = 'none';
+        });
+        // แสดงข้อความ "ไม่พบข้อมูล..." ถ้าไม่มี active item จริงๆ
+        // แต่ต้องเช็คอีกทีว่ามี active item ไหม? 
+        // ใน PHP เราเช็ค $hasActiveProductPromos แล้ว render .no-data-row ออกมาถ้าไม่มี
+        // ถ้าเราซ่อน history แล้ว active ไม่มี มันก็ควรจะโชว์ .no-data-row กลับมา
+        noDataRows.forEach(row => {
+            row.style.display = 'table-row';
+        });
+
+        btn.innerHTML = '<i class="fas fa-history"></i> ประวัติโปรโมชั่น';
+        btn.classList.remove('active');
+    }
+}
+</script>

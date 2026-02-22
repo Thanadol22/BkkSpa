@@ -35,6 +35,10 @@
                         <i class="fas fa-user-tie"></i>
                         <span>พนักงาน</span>
                     </a>
+                    <a href="index.php?action=admin_manage_member" class="nav-item <?= (strpos($_GET['action'], 'admin_member') !== false || $_GET['action'] == 'admin_manage_member') ? 'active' : '' ?>">
+                        <i class="fas fa-users"></i>
+                        <span>สมาชิก</span>
+                    </a>
                     </div>
 
                 <div class="nav-section">
