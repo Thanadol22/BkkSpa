@@ -190,10 +190,10 @@ class Promotion {
     }
 
     // [New] ดึงโปรโมชั่นที่ Active ของคอร์สนี้
-    // ปรับปรุง: ไม่เช็ค visible=1 ถ้ายึดตามช่วงเวลา (ตาม requirement ลูกค้าที่ต้องการให้ยึดตามเวลาเปิด-ปิด แม้จะกดปิดการมองเห็น)
     public function getActiveCoursePromotion($course_id) {
         $sql = "SELECT * FROM promotion_course 
                 WHERE course_id = :course_id 
+                  AND visible = 1
                   AND NOW() BETWEEN start_at AND end_at
                 ORDER BY discount DESC 
                 LIMIT 1";
@@ -206,6 +206,7 @@ class Promotion {
     public function getPromotionAtDate($course_id, $date) {
         $sql = "SELECT * FROM promotion_course 
                 WHERE course_id = :course_id 
+                  AND visible = 1
                   AND DATE(:date) BETWEEN DATE(start_at) AND DATE(end_at)
                 ORDER BY discount DESC 
                 LIMIT 1";

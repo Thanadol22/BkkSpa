@@ -35,9 +35,9 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">เบอร์โทรศัพท์</label>
-                            <input type="tel" name="phone" class="input-field" placeholder="08xxxxxxxx" 
-                                   oninput="this.value = this.value.replace(/[^0-9]/g, '')" 
-                                   maxlength="10" required>
+                            <input type="tel" name="phone" class="input-field" placeholder="08X-XXX-XXXX" 
+                                   oninput="formatPhoneNumber(this)" 
+                                   maxlength="12" required>
                         </div>
                     </div>
 
@@ -59,8 +59,8 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">เลขที่บัญชี</label>
-                            <input type="text" name="bank_account" class="input-field" placeholder="ระบุเลขบัญชี (เฉพาะตัวเลข)"
-                                   oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                            <input type="text" name="bank_account" class="input-field" placeholder="XXX-X-XXXXX-X"
+                                   oninput="formatBankAccount(this)" maxlength="19">
                         </div>
                     </div>
 
@@ -100,5 +100,45 @@
             </div>
         </div>
     </div>
+    <script>
+        function formatPhoneNumber(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value.length > 10) value = value.substring(0, 10);
+            let formatted = '';
+            if (value.length > 3) {
+                formatted += value.substring(0, 3) + '-';
+                if (value.length > 6) {
+                    formatted += value.substring(3, 6) + '-' + value.substring(6);
+                } else {
+                    formatted += value.substring(3);
+                }
+            } else {
+                formatted = value;
+            }
+            input.value = formatted;
+        }
+
+        function formatBankAccount(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value.length > 15) value = value.substring(0, 15);
+            let formatted = '';
+            if (value.length > 3) {
+                formatted += value.substring(0, 3) + '-';
+                if (value.length > 4) {
+                    formatted += value.substring(3, 4) + '-';
+                    if (value.length > 9) {
+                        formatted += value.substring(4, 9) + '-' + value.substring(9);
+                    } else {
+                        formatted += value.substring(4);
+                    }
+                } else {
+                    formatted += value.substring(3);
+                }
+            } else {
+                formatted = value;
+            }
+            input.value = formatted;
+        }
+    </script>
 </body>
 </html>

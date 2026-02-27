@@ -30,7 +30,7 @@
                                 <span style="color: #2c3e50; font-weight: bold;">฿<?= number_format($p['price'], 0) ?></span>
                             <?php endif; ?>
 
-                            <span style="font-size: 12px; color: <?= $p['stock'] > 0 ? '#28a745' : '#dc3545' ?>">
+                            <span style="font-size: 12px; color: <?= $p['stock'] > 0 ? '#28a745' : '#dc3545' ?>" id="stock_display_<?= $p['product_id'] ?>">
                                 คงเหลือ: <?= $p['stock'] ?>
                             </span>
                         </div>
@@ -154,9 +154,26 @@ function addToCartFromCard(id) {
 // Load Cart Function (Update UI without refresh)
 function loadCart() {
     fetch('index.php?action=staff_pos_get_cart&t=' + new Date().getTime())
-    .then(response => response.text())
-    .then(html => {
-        document.getElementById('pos-cart-container').innerHTML = html;
+    .then(response => response.json())
+    .then(data => {
+        // อัปเดต HTML ของตะกร้า
+        document.getElementById('pos-cart-container').innerHTML = data.html;
+        
+        // อัปเดตจำนวนสต็อกคงเหลือบนหน้าจอ
+        if (data.stockData) {
+            for (let productId in data.stockData) {
+                let stockDisplay = document.getElementById('stock_display_' + productId);
+                if (stockDisplay) {
+                    let remaining = data.stockData[productId];
+                    stockDisplay.innerText = 'คงเหลือ: ' + remaining;
+                    if (remaining > 0) {
+                        stockDisplay.style.color = '#28a745';
+                    } else {
+                        stockDisplay.style.color = '#dc3545';
+                    }
+                }
+            }
+        }
     })
     .catch(error => console.error('Error loading cart:', error));
 }

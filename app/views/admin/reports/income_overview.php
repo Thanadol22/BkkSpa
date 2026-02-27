@@ -3,7 +3,8 @@
 $filterMap = [
     'daily' => 'รายวัน',
     'monthly' => 'รายเดือน',
-    'yearly' => 'รายปี'
+    'yearly' => 'รายปี',
+    'custom' => 'กำหนดเอง'
 ];
 $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
 ?>
@@ -32,6 +33,11 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
                         <option value="<?= $y ?>" <?= ($selected_year == $y) ? 'selected' : '' ?>><?= $y + 543 ?></option>
                     <?php endfor; ?>
                 </select>
+            <?php elseif ($filter == 'custom'): ?>
+                <input type="date" name="start_date" value="<?= htmlspecialchars($start_date_custom) ?>" class="form-control" style="width: auto; padding: 5px 10px;">
+                <span>ถึง</span>
+                <input type="date" name="end_date" value="<?= htmlspecialchars($end_date_custom) ?>" class="form-control" style="width: auto; padding: 5px 10px;">
+                <button type="submit" class="btn-filter" style="padding: 5px 15px; background: #16a34a; color: white; border: none;">ค้นหา</button>
             <?php else: // monthly ?>
                 <input type="month" name="month" value="<?= htmlspecialchars($selected_month) ?>" class="form-control" style="width: auto; padding: 5px 10px;" onchange="this.form.submit()">
             <?php endif; ?>
@@ -42,6 +48,7 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
         <a href="index.php?action=admin_reports&filter=daily" class="btn-filter <?= ($filter == 'daily') ? 'active' : '' ?>">รายวัน</a>
         <a href="index.php?action=admin_reports&filter=monthly" class="btn-filter <?= ($filter == 'monthly') ? 'active' : '' ?>">รายเดือน</a>
         <a href="index.php?action=admin_reports&filter=yearly" class="btn-filter <?= ($filter == 'yearly') ? 'active' : '' ?>">รายปี</a>
+        <a href="index.php?action=admin_reports&filter=custom" class="btn-filter <?= ($filter == 'custom') ? 'active' : '' ?>">กำหนดเอง</a>
     </div>
 </div>
 

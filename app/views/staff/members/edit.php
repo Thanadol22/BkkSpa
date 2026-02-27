@@ -62,9 +62,15 @@
             </select>
         </div>
 
+        <div style="margin-top: 20px;">
+            <label style="display:block; margin-bottom: 5px; font-weight:600;">รหัสผ่านใหม่ (ปล่อยว่างไว้หากไม่ต้องการเปลี่ยน)</label>
+            <input type="password" name="new_password" placeholder="กรอกรหัสผ่านใหม่" 
+                   style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+        </div>
+
         <div style="margin-top: 30px; text-align: right;">
-            <a href="index.php?action=staff_members" class="btn-quick-gray" style="margin-right: 10px;">ยกเลิก</a>
-            <button type="submit" class="btn-quick-green" style="border: none; cursor: pointer;">บันทึกการเปลี่ยนแปลง</button>
+            <a href="index.php?action=staff_members" class="btn-quick-red" style="margin-right: 10px; display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; transition: background-color 0.3s;">ยกเลิก</a>
+            <button type="submit" class="btn-quick-green" style="border: none; cursor: pointer; padding: 10px 20px; background-color: #28a745; color: white; border-radius: 5px; font-weight: 600; transition: background-color 0.3s;">บันทึกการเปลี่ยนแปลง</button>
         </div>
 
     </form>

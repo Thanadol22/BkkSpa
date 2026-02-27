@@ -172,6 +172,15 @@ if ($action === 'doRegister' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: index.php?action=register');
         exit;
     }
+
+    $stmtEmail = $pdo->prepare("SELECT user_id FROM user WHERE email = ?");
+    $stmtEmail->execute([$email]);
+    if ($stmtEmail->fetch()) {
+        $_SESSION['error'] = "อีเมลนี้ถูกใช้งานแล้ว";
+        header('Location: index.php?action=register');
+        exit;
+    }
+
     $sql = "INSERT INTO user (role_id, full_name, phone, bank_name, bank_account, email, username, password)
             VALUES (3, ?, ?, ?, ?, ?, ?, ?)";
 
@@ -1271,11 +1280,22 @@ switch ($action) {
             $bank_name = $_POST['bank_name'];
             $bank_account = $_POST['bank_account'];
             $is_active = $_POST['is_active'];
+            $new_password = $_POST['new_password'] ?? '';
 
-            // อัปเดตข้อมูล (เฉพาะ Role 3)
-            $sql = "UPDATE user SET full_name=?, phone=?, email=?, bank_name=?, bank_account=?, is_active=? WHERE user_id=? AND role_id=3";
-            $stmt = $pdo->prepare($sql);
-            if ($stmt->execute([$full_name, $phone, $email, $bank_name, $bank_account, $is_active, $id])) {
+            if (!empty($new_password)) {
+                // อัปเดตข้อมูลพร้อมรหัสผ่านใหม่
+                $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                $sql = "UPDATE user SET full_name=?, phone=?, email=?, bank_name=?, bank_account=?, is_active=?, password=? WHERE user_id=? AND role_id=3";
+                $stmt = $pdo->prepare($sql);
+                $result = $stmt->execute([$full_name, $phone, $email, $bank_name, $bank_account, $is_active, $hashed_password, $id]);
+            } else {
+                // อัปเดตข้อมูล (เฉพาะ Role 3) ไม่เปลี่ยนรหัสผ่าน
+                $sql = "UPDATE user SET full_name=?, phone=?, email=?, bank_name=?, bank_account=?, is_active=? WHERE user_id=? AND role_id=3";
+                $stmt = $pdo->prepare($sql);
+                $result = $stmt->execute([$full_name, $phone, $email, $bank_name, $bank_account, $is_active, $id]);
+            }
+
+            if ($result) {
                 echo "<script>alert('บันทึกข้อมูลสำเร็จ'); window.location='index.php?action=staff_members';</script>";
             } else {
                 echo "<script>alert('เกิดข้อผิดพลาด'); window.history.back();</script>";
@@ -2832,41 +2852,50 @@ switch ($action) {
             $productModel = new Product($pdo);
             $product = $productModel->getProductById($product_id);
 
-            if ($product && $product['stock'] >= $qty) {
-                // คำนวณราคาและส่วนลด
-                $promo = $productModel->getActivePromotion($product_id);
-                $unit_price = $product['price'];
-                $discount_percent = 0;
-                if ($promo) {
-                    $discount_percent = floatval($promo['discount']);
-                }
+            if ($product) {
+                // เช็คจำนวนสินค้าในตะกร้าปัจจุบัน
+                $current_qty_in_cart = isset($_SESSION['pos_cart'][$product_id]) ? $_SESSION['pos_cart'][$product_id]['qty'] : 0;
+                $total_requested_qty = $current_qty_in_cart + $qty;
 
-                $discount_per_unit = $unit_price * ($discount_percent / 100);
-                $final_unit_price = $unit_price - $discount_per_unit;
+                if ($product['stock'] >= $total_requested_qty) {
+                    // คำนวณราคาและส่วนลด
+                    $promo = $productModel->getActivePromotion($product_id);
+                    $unit_price = $product['price'];
+                    $discount_percent = 0;
+                    if ($promo) {
+                        $discount_percent = floatval($promo['discount']);
+                    }
 
-                // เพิ่ม/รวมลงใน Session Cart
-                if (isset($_SESSION['pos_cart'][$product_id])) {
-                    $_SESSION['pos_cart'][$product_id]['qty'] += $qty;
+                    $discount_per_unit = $unit_price * ($discount_percent / 100);
+                    $final_unit_price = $unit_price - $discount_per_unit;
+
+                    // เพิ่ม/รวมลงใน Session Cart
+                    if (isset($_SESSION['pos_cart'][$product_id])) {
+                        $_SESSION['pos_cart'][$product_id]['qty'] += $qty;
+                    } else {
+                        $_SESSION['pos_cart'][$product_id] = [
+                            'product_id' => $product['product_id'],
+                            'name'       => $product['name'],
+                            'qty'        => $qty,
+                            'unit_price' => $unit_price,
+                            'discount_percent' => $discount_percent,
+                            'discount_per_unit' => $discount_per_unit,
+                            'final_unit_price' => $final_unit_price
+                        ];
+                    }
+
+                    // อัปเดต Line Total ทุกครั้ง
+                    $_SESSION['pos_cart'][$product_id]['line_total'] = 
+                        $_SESSION['pos_cart'][$product_id]['final_unit_price'] * $_SESSION['pos_cart'][$product_id]['qty'];
+
+                    echo json_encode(['status' => 'success', 'msg' => 'เพิ่มสินค้าเรียบร้อย']);
                 } else {
-                    $_SESSION['pos_cart'][$product_id] = [
-                        'product_id' => $product['product_id'],
-                        'name'       => $product['name'],
-                        'qty'        => $qty,
-                        'unit_price' => $unit_price,
-                        'discount_percent' => $discount_percent,
-                        'discount_per_unit' => $discount_per_unit,
-                        'final_unit_price' => $final_unit_price
-                    ];
+                    http_response_code(400);
+                    echo json_encode(['status' => 'error', 'msg' => 'ไม่สามารถเพิ่มสินค้าได้ เนื่องจากจำนวนในสต็อกไม่เพียงพอ']);
                 }
-
-                // อัปเดต Line Total ทุกครั้ง
-                $_SESSION['pos_cart'][$product_id]['line_total'] = 
-                    $_SESSION['pos_cart'][$product_id]['final_unit_price'] * $_SESSION['pos_cart'][$product_id]['qty'];
-
-                echo json_encode(['status' => 'success', 'msg' => 'เพิ่มสินค้าเรียบร้อย']);
             } else {
                 http_response_code(400);
-                echo json_encode(['status' => 'error', 'msg' => 'สินค้าหมดหรือจำนวนไม่พอ']);
+                echo json_encode(['status' => 'error', 'msg' => 'ไม่พบสินค้า']);
             }
         }
         exit;
@@ -2935,7 +2964,24 @@ switch ($action) {
         foreach ($cart as $item) {
             $totalAmount += $item['line_total'];
         }
-        // ส่งกลับเป็น HTML Fragment
+        
+        // ดึงข้อมูลสต็อกล่าสุดเพื่อส่งกลับไปอัปเดตหน้าจอ
+        require_once APP_PATH . '/models/Product.php';
+        $productModel = new Product($pdo);
+        $products = $productModel->getActiveProductsWithPromo();
+        $stockData = [];
+        foreach ($products as $p) {
+            $current_qty_in_cart = isset($cart[$p['product_id']]) ? $cart[$p['product_id']]['qty'] : 0;
+            $remaining_stock = $p['stock'] - $current_qty_in_cart;
+            $stockData[$p['product_id']] = max(0, $remaining_stock);
+        }
+
+        // ส่งกลับเป็น JSON ที่มีทั้ง HTML และข้อมูลสต็อก
+        $response = [
+            'stockData' => $stockData,
+            'html' => ''
+        ];
+
         ob_start();
         ?>
         <div class="cart-header" style="padding: 15px; border-bottom: 1px solid #eee; background: #f8f9fa;">
@@ -2989,7 +3035,9 @@ switch ($action) {
             </a>
         </div>
         <?php
-        echo ob_get_clean();
+        $response['html'] = ob_get_clean();
+        header('Content-Type: application/json');
+        echo json_encode($response);
         exit;
         break;
 
@@ -3070,6 +3118,8 @@ switch ($action) {
         $selected_date = $_GET['date'] ?? date('Y-m-d');
         $selected_month = $_GET['month'] ?? date('Y-m');
         $selected_year = $_GET['year'] ?? date('Y');
+        $start_date_custom = $_GET['start_date'] ?? date('Y-m-01');
+        $end_date_custom = $_GET['end_date'] ?? date('Y-m-t');
 
         // กำหนดตัวแปรตาม Filter
         $sqlDateFormat = "";
@@ -3101,6 +3151,21 @@ switch ($action) {
             for ($i = 1; $i <= $monthsInYear; $i++) {
                 $m = str_pad($i, 2, '0', STR_PAD_LEFT);
                 $labels["$selected_year-$m"] = date('M', strtotime("$selected_year-$m-01"));
+            }
+        } elseif ($filter == 'custom') {
+            $startDate = $start_date_custom;
+            $endDate = $end_date_custom;
+            $sqlDateFormat = "%Y-%m-%d";
+            
+            $begin = new DateTime($startDate);
+            $end = new DateTime($endDate);
+            $end = $end->modify('+1 day'); // Include end date
+            
+            $interval = DateInterval::createFromDateString('1 day');
+            $period = new DatePeriod($begin, $interval, $end);
+            
+            foreach ($period as $dt) {
+                $labels[$dt->format("Y-m-d")] = $dt->format("d/m");
             }
         } else { // monthly
             $startDate = "$selected_month-01";
