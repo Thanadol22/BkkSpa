@@ -152,7 +152,7 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
                     <div class="v-bar-green" style="height: <?= $h ?>%; position:relative; min-height:2px;" title="<?= number_format($row['total']) ?> บาท">
                         <?php if ($h > 20): ?>
                             <span style="position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-size:10px; color:#16a34a; font-weight:bold;">
-                                <?= number_format($row['total'] / 1000) ?>k
+                                <?= number_format($row['total'] / 1000, 1) ?>k
                             </span>
                         <?php endif; ?>
                     </div>

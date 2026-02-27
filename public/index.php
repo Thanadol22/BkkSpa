@@ -580,11 +580,12 @@ switch ($action) {
 
         // 1. ดึงข้อมูลการจอง + ข้อมูลบัญชีผู้เรียน + ข้อมูลคอร์ส
         $sql = "SELECT b.*, u.bank_name, u.bank_account, u.full_name, u.email, 
-                       c.name as course_name, c.price as original_price, c.course_id 
+                       c.name as course_name, c.price as original_price, c.course_id, p.amount as paid_amount
                 FROM booking b 
                 JOIN user u ON b.user_id = u.user_id 
                 JOIN course_schedule s ON b.schedule_id = s.schedule_id
                 JOIN course c ON s.course_id = c.course_id
+                LEFT JOIN payment p ON b.booking_id = p.booking_id
                 WHERE b.booking_id = :bid";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['bid' => $booking_id]);
@@ -627,17 +628,8 @@ switch ($action) {
                 'bid' => $booking_id
             ]);
 
-            // คำนวณยอดเงินที่คืน (Net Amount)
-            $net_refund_amount = $booking['original_price'];
-            if (isset($booking['course_id'])) {
-                require_once APP_PATH . '/models/Promotion.php';
-                $promoModel = new Promotion($pdo);
-                $activePromo = $promoModel->getPromotionAtDate($booking['course_id'], $booking['booked_at']);
-                if ($activePromo) {
-                   $discountVal = ($booking['original_price'] * $activePromo['discount']) / 100;
-                   $net_refund_amount = $booking['original_price'] - $discountVal;
-                }
-            }
+            // คำนวณยอดเงินที่คืน (Net Amount) จากยอดที่จ่ายจริง
+            $net_refund_amount = $booking['paid_amount'] ?? $booking['original_price'];
             $refund_amount_text = number_format($net_refund_amount, 2);
 
             // 3. เตรียมเนื้อหาอีเมล
@@ -747,27 +739,19 @@ switch ($action) {
             $stmt->execute(['slip' => $slipPath, 'bid' => $booking_id]);
 
             // --- 3. ดึงข้อมูลผู้เรียน (เพื่อส่งเมลแจ้งเตือน) ---
-            $sqlInfo = "SELECT b.*, u.email, u.full_name, c.name as course_name, c.price as original_price, c.course_id
+            $sqlInfo = "SELECT b.*, u.email, u.full_name, c.name as course_name, c.price as original_price, c.course_id, p.amount as paid_amount
                         FROM booking b
                         JOIN user u ON b.user_id = u.user_id
                         JOIN course_schedule s ON b.schedule_id = s.schedule_id
                         JOIN course c ON s.course_id = c.course_id
+                        LEFT JOIN payment p ON b.booking_id = p.booking_id
                         WHERE b.booking_id = :bid";
             $stmtInfo = $pdo->prepare($sqlInfo);
             $stmtInfo->execute(['bid' => $booking_id]);
             $info = $stmtInfo->fetch(PDO::FETCH_ASSOC);
 
-            // คำนวณยอดเงินที่คืนจริง (Check Promotion)
-            $net_refund_amount = $info['original_price'];
-            if (isset($info['course_id'])) {
-                require_once APP_PATH . '/models/Promotion.php';
-                $promoModel = new Promotion($pdo);
-                $activePromo = $promoModel->getPromotionAtDate($info['course_id'], $info['booked_at']);
-                if ($activePromo) {
-                   $discountVal = ($info['original_price'] * $activePromo['discount']) / 100;
-                   $net_refund_amount = $info['original_price'] - $discountVal;
-                }
-            }
+            // คำนวณยอดเงินที่คืนจริงจากยอดที่จ่ายจริง
+            $net_refund_amount = $info['paid_amount'] ?? $info['original_price'];
             $refund_amount_text = number_format($net_refund_amount, 2);
 
             $pdo->commit();
@@ -807,37 +791,31 @@ switch ($action) {
             exit;
         }
 
-        // ดึงรายการรอคืนเงิน (เพิ่ม c.price, c.course_id)
-        $sql = "SELECT b.*, u.full_name, c.name as course_name, c.course_id, c.price as original_price 
+        // ดึงรายการรอคืนเงิน (เพิ่ม c.price, c.course_id, p.amount)
+        $sql = "SELECT b.*, u.full_name, c.name as course_name, c.course_id, c.price as original_price, p.amount as paid_amount
                 FROM booking b 
                 JOIN user u ON b.user_id = u.user_id 
                 JOIN course_schedule s ON b.schedule_id = s.schedule_id
                 JOIN course c ON s.course_id = c.course_id
+                LEFT JOIN payment p ON b.booking_id = p.booking_id
                 WHERE b.status = 'RefundPending' 
                 ORDER BY b.booked_at ASC";
         $stmt = $pdo->query($sql);
         $refunds = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // คำนวณราคาสุทธิ (หักส่วนลด)
-        require_once APP_PATH . '/models/Promotion.php';
-        $promoModel = new Promotion($pdo);
-
         foreach ($refunds as &$row) {
-            $bookingDate = $row['booked_at'];
-            $courseId = $row['course_id'];
-            
-            // หาโปรโมชั่น ณ วันที่จอง
-            $activePromo = $promoModel->getPromotionAtDate($courseId, $bookingDate);
+            $originalPrice = $row['original_price'];
+            $paidAmount = $row['paid_amount'] ?? $originalPrice;
             
             // ค่าเริ่มต้น
             $row['discount_percent'] = 0;
             $row['discount_amount'] = 0;
-            $row['net_price'] = $row['original_price'];
+            $row['net_price'] = $paidAmount;
 
-            if ($activePromo) {
-                $row['discount_percent'] = intval($activePromo['discount']);
-                $row['discount_amount'] = ($row['original_price'] * $activePromo['discount']) / 100;
-                $row['net_price'] = $row['original_price'] - $row['discount_amount'];
+            if ($originalPrice > 0 && $paidAmount < $originalPrice) {
+                $row['discount_amount'] = $originalPrice - $paidAmount;
+                $row['discount_percent'] = round(($row['discount_amount'] / $originalPrice) * 100);
             }
         }
         unset($row); // ป้องกันบั๊ก loop reference
@@ -1669,25 +1647,13 @@ switch ($action) {
             $bookingDetail = $bookingModel->getBookingFullDetails($booking_id);
 
             // [START Logic คำนวณส่วนลดสำหรับหน้า Staff]
-            require_once APP_PATH . '/models/Promotion.php';
-            $promoModel = new Promotion($pdo);
-            $bookingDate = $bookingDetail['booked_at'] ?? date('Y-m-d H:i:s');
-            
-            // ตรวจสอบว่ามี course_id หรือไม่ (กัน Error)
-            if (isset($bookingDetail['course_id'])) {
-                $activePromo = $promoModel->getPromotionAtDate($bookingDetail['course_id'], $bookingDate);
-            } else {
-                $activePromo = false;
-            }
-            
             $bookingDetail['original_price'] = $bookingDetail['price'];
+            $bookingDetail['final_price'] = $bookingDetail['paid_amount'] ?? $bookingDetail['price'];
             $bookingDetail['discount_percent'] = 0;
-            $bookingDetail['final_price'] = $bookingDetail['price'];
             
-            if ($activePromo) {
-                $bookingDetail['discount_percent'] = intval($activePromo['discount']);
-                $discountVal = ($bookingDetail['original_price'] * $activePromo['discount']) / 100;
-                $bookingDetail['final_price'] = $bookingDetail['original_price'] - $discountVal;
+            if ($bookingDetail['original_price'] > 0 && $bookingDetail['final_price'] < $bookingDetail['original_price']) {
+                $discountVal = $bookingDetail['original_price'] - $bookingDetail['final_price'];
+                $bookingDetail['discount_percent'] = round(($discountVal / $bookingDetail['original_price']) * 100);
             }
             // [END Logic]
 
@@ -1742,11 +1708,12 @@ switch ($action) {
                 // --- เริ่มส่วนส่งอีเมลหาลูกค้า ---
                 // 1. ดึงข้อมูลลูกค้าและการจอง
                 $sqlInfo = "SELECT u.email, u.full_name, c.course_id, c.name as course_name, 
-                                   cs.start_at, cs.end_at, b.booking_id, b.booked_at, c.price as paid_amount
+                                   cs.start_at, cs.end_at, b.booking_id, b.booked_at, c.price as original_price, p.amount as paid_amount
                             FROM booking b
                             JOIN user u ON b.user_id = u.user_id
                             JOIN course_schedule cs ON b.schedule_id = cs.schedule_id
                             JOIN course c ON cs.course_id = c.course_id
+                            LEFT JOIN payment p ON b.booking_id = p.booking_id
                             WHERE b.booking_id = ?";
 
                 $stmtInfo = $pdo->prepare($sqlInfo);
@@ -1768,25 +1735,19 @@ switch ($action) {
                         // (ต้องมีฟังก์ชัน createReceipt ใน Booking Model)
                         $receiptNo = $bookingModel->createReceipt($booking_id);
 
-                        // [Fix] คำนวณส่วนลดตามโปรโมชั่น (เช็คจากวันที่จอง booked_at)
-                        require_once APP_PATH . '/models/Promotion.php';
-                        $promoModel = new Promotion($pdo);
-                        // ถ้าไม่มี booked_at ให้ใช้ NOW() แทน
-                        $bookingDate = $info['booked_at'] ?? date('Y-m-d H:i:s');
-                        $activePromo = $promoModel->getPromotionAtDate($info['course_id'], $bookingDate);
-                        
-                        $originalPrice = $info['paid_amount'];
+                        // [Fix] คำนวณส่วนลดจากยอดที่จ่ายจริง
+                        $originalPrice = $info['original_price'];
+                        $finalPrice = $info['paid_amount'] ?? $originalPrice;
                         $discountVal = 0;
-                        $finalPrice = $originalPrice;
                         $discountRow = "";
 
-                        if ($activePromo) {
-                            $discountVal = ($originalPrice * $activePromo['discount']) / 100;
-                            $finalPrice = $originalPrice - $discountVal;
+                        if ($originalPrice > 0 && $finalPrice < $originalPrice) {
+                            $discountVal = $originalPrice - $finalPrice;
+                            $discountPercent = round(($discountVal / $originalPrice) * 100);
                             
                             $discountRow = '
                             <tr>
-                                <td style="padding: 10px; border-bottom: 1px solid #ddd;">ส่วนลด (' . intval($activePromo['discount']) . '%)</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #ddd;">ส่วนลด (' . $discountPercent . '%)</td>
                                 <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right; color: red;">-' . number_format($discountVal, 2) . '</td>
                             </tr>';
                         }
@@ -2624,9 +2585,8 @@ switch ($action) {
         $saleToday = $pdo->query($sqlSaleToday)->fetchColumn() ?: 0;
 
         // 2.2 ยอดคอร์สวันนี้ (Status = Confirmed)
-        $sqlBookingToday = "SELECT SUM(c.price) FROM booking b 
-                            JOIN course_schedule cs ON b.schedule_id = cs.schedule_id 
-                            JOIN course c ON cs.course_id = c.course_id 
+        $sqlBookingToday = "SELECT SUM(p.amount) FROM booking b 
+                            JOIN payment p ON b.booking_id = p.booking_id
                             WHERE b.status = 'Confirmed' AND DATE(b.booked_at) = '$today'";
         $bookingToday = $pdo->query($sqlBookingToday)->fetchColumn() ?: 0;
 
@@ -2642,7 +2602,7 @@ switch ($action) {
             // ยอดสินค้าเดือนนี้
             $sTotal = $pdo->query("SELECT SUM(total_amount) FROM sale WHERE sold_at BETWEEN '$start' AND '$end'")->fetchColumn() ?: 0;
             // ยอดคอร์สเดือนนี้
-            $bTotal = $pdo->query("SELECT SUM(c.price) FROM booking b JOIN course_schedule cs ON b.schedule_id = cs.schedule_id JOIN course c ON cs.course_id = c.course_id WHERE b.status = 'Confirmed' AND b.booked_at BETWEEN '$start' AND '$end'")->fetchColumn() ?: 0;
+            $bTotal = $pdo->query("SELECT SUM(p.amount) FROM booking b JOIN payment p ON b.booking_id = p.booking_id WHERE b.status = 'Confirmed' AND b.booked_at BETWEEN '$start' AND '$end'")->fetchColumn() ?: 0;
 
             $chartData[] = [
                 'label' => $label,
@@ -3198,11 +3158,10 @@ switch ($action) {
         $salesData = $pdo->query($sqlSale)->fetchAll(PDO::FETCH_KEY_PAIR);
 
         // [แก้ไขจุดที่ 1] 1.2 คอร์ส (เปลี่ยนจาก Payment เป็น Booking ที่ Confirmed)
-        // ดึงราคาจาก Course โดยตรง
-        $sqlPay = "SELECT DATE_FORMAT(b.booked_at, '$sqlDateFormat') as t_date, SUM(c.price) as total 
+        // ดึงราคาจาก Payment โดยตรง เพื่อให้ได้ราคาสุทธิหลังหักส่วนลด
+        $sqlPay = "SELECT DATE_FORMAT(b.booked_at, '$sqlDateFormat') as t_date, SUM(p.amount) as total 
                    FROM booking b
-                   JOIN course_schedule cs ON b.schedule_id = cs.schedule_id
-                   JOIN course c ON cs.course_id = c.course_id
+                   JOIN payment p ON b.booking_id = p.booking_id
                    WHERE b.status = 'Confirmed' 
                    AND b.booked_at BETWEEN '$startDate 00:00:00' AND '$endDate 23:59:59'
                    GROUP BY t_date";
@@ -3238,8 +3197,9 @@ switch ($action) {
         $revenueByType = [];
 
         // [แก้ไขจุดที่ 2] 2.1 ประเภทคอร์ส (จาก Booking ที่ Confirmed)
-        $sqlTypeC = "SELECT c.course_type, SUM(c.price) as total
+        $sqlTypeC = "SELECT c.course_type, SUM(p.amount) as total
                      FROM booking b
+                     JOIN payment p ON b.booking_id = p.booking_id
                      JOIN course_schedule cs ON b.schedule_id = cs.schedule_id
                      JOIN course c ON cs.course_id = c.course_id
                      WHERE b.status = 'Confirmed'
@@ -3263,8 +3223,9 @@ switch ($action) {
 
 
         
-        $sqlRevCourse = "SELECT c.name, SUM(c.price) as total
+        $sqlRevCourse = "SELECT c.name, SUM(p.amount) as total
                          FROM booking b
+                         JOIN payment p ON b.booking_id = p.booking_id
                          JOIN course_schedule cs ON b.schedule_id = cs.schedule_id
                          JOIN course c ON cs.course_id = c.course_id
                          WHERE b.status = 'Confirmed'

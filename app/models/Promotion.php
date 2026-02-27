@@ -206,7 +206,6 @@ class Promotion {
     public function getPromotionAtDate($course_id, $date) {
         $sql = "SELECT * FROM promotion_course 
                 WHERE course_id = :course_id 
-                  AND visible = 1
                   AND DATE(:date) BETWEEN DATE(start_at) AND DATE(end_at)
                 ORDER BY discount DESC 
                 LIMIT 1";
