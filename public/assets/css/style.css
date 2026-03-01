@@ -171,6 +171,92 @@ ul {
     display: none;
 }
 
+/* =========================================
+   2.1 NAVBAR RESPONSIVE
+   ========================================= */
+@media (max-width: 991px) {
+    .navbar {
+        padding: 15px 20px;
+        justify-content: space-between;
+    }
+
+    .nav-logo img {
+        height: 40px;
+    }
+
+    .menu-toggle {
+        display: flex;
+        z-index: 1001;
+    }
+
+    /* Change bar to X when active */
+    .menu-toggle.is-active .bar:nth-child(1) {
+        transform: translateY(8px) rotate(45deg);
+    }
+    .menu-toggle.is-active .bar:nth-child(2) {
+        opacity: 0;
+    }
+    .menu-toggle.is-active .bar:nth-child(3) {
+        transform: translateY(-8px) rotate(-45deg);
+    }
+
+    .nav-links {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 280px;
+        height: 100vh;
+        background-color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 80px 30px 40px;
+        margin: 0;
+        gap: 15px;
+        box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+        transition: right 0.3s ease-in-out;
+        z-index: 1000;
+        overflow-y: auto;
+    }
+
+    .nav-links.active {
+        right: 0;
+    }
+
+    .nav-links li {
+        width: 100%;
+    }
+
+    .nav-links a {
+        display: block;
+        width: 100%;
+        padding: 10px 0;
+        font-size: 16px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .nav-actions.desktop-only {
+        display: none;
+    }
+
+    .mobile-only-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .mobile-only-actions .mobile-link {
+        border-bottom: none;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 0;
+    }
+}
+
 /* ซ่อนเมนูมือถือบน PC */
 
 
@@ -2792,70 +2878,7 @@ ul {
         width: 100%;
     }
 
-    /* Navbar Adjustments */
-    .navbar {
-        padding: 15px 20px;
-        justify-content: space-between;
-    }
-
-    .nav-logo img {
-        height: 50px;
-    }
-
-    .menu-toggle {
-        display: flex;
-    }
-
-    /* Show Hamburger */
-    .nav-actions {
-        display: none;
-    }
-
-    /* Hide Desktop Buttons */
-
-    .nav-links {
-        display: none;
-        /* Hide Menu by default */
-        flex-direction: column;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        width: 100%;
-        background: #fff;
-        padding: 20px 0;
-        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        margin: 0;
-        gap: 0;
-    }
-
-    .nav-links.active {
-        display: flex;
-    }
-
-    /* Shown via JS */
-
-    .nav-links li {
-        width: 100%;
-    }
-
-    .nav-links li a {
-        display: block;
-        padding: 15px;
-        border-bottom: 1px solid #f0f0f0;
-        width: 100%;
-    }
-
-    .mobile-only-actions {
-        display: block;
-        margin-top: 10px;
-    }
-
-    /* Show Login/Logout links */
-    .mobile-link {
-        font-weight: 600;
-        color: #769E48 !important;
-    }
+    /* Removed duplicate Navbar adjustments here as it is handled at the top */
 
     /* Auth & Layout Adjustments */
     .main-container {
@@ -2889,6 +2912,10 @@ ul {
     .online-course-section {
         flex-direction: column;
         text-align: center;
+    }
+
+    .online-features-grid {
+        grid-template-columns: 1fr;
     }
 
     .online-content {

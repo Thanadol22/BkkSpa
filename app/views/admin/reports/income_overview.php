@@ -7,6 +7,17 @@ $filterMap = [
     'custom' => 'กำหนดเอง'
 ];
 $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
+
+$monthMap = [
+    'January' => 'มกราคม', 'February' => 'กุมภาพันธ์', 'March' => 'มีนาคม',
+    'April' => 'เมษายน', 'May' => 'พฤษภาคม', 'June' => 'มิถุนายน',
+    'July' => 'กรกฎาคม', 'August' => 'สิงหาคม', 'September' => 'กันยายน',
+    'October' => 'ตุลาคม', 'November' => 'พฤศจิกายน', 'December' => 'ธันวาคม',
+    'Jan' => 'ม.ค.', 'Feb' => 'ก.พ.', 'Mar' => 'มี.ค.',
+    'Apr' => 'เม.ย.', 'Jun' => 'มิ.ย.', 'Jul' => 'ก.ค.', 
+    'Aug' => 'ส.ค.', 'Sep' => 'ก.ย.', 'Oct' => 'ต.ค.', 
+    'Nov' => 'พ.ย.', 'Dec' => 'ธ.ค.'
+];
 ?>
 
 <div class="section-header">
@@ -23,7 +34,50 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
             <input type="hidden" name="filter" value="<?= $filter ?>">
             
             <?php if ($filter == 'daily'): ?>
-                <input type="date" name="date" value="<?= htmlspecialchars($selected_date) ?>" class="form-control" style="width: auto; padding: 5px 10px;" onchange="this.form.submit()">
+                <input type="text" name="date" id="thaiDatePicker" value="<?= htmlspecialchars($selected_date) ?>" class="form-control" style="width: 150px; padding: 5px 10px; cursor: pointer; text-align: center;" readonly placeholder="คลิกเพื่อเลือกวัน">
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const input = document.getElementById('thaiDatePicker');
+                        if (!input) return; // Prevent error if element not found
+                        
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const selectedDate = urlParams.get('date') || input.value;
+
+                        flatpickr(input, {
+                            locale: "th",
+                            dateFormat: "Y-m-d",
+                            defaultDate: selectedDate || "today",
+                            onReady: function(selectedDates, dateStr, instance) {
+                                // แปลงปีบนหัวปฏิทินเป็น พ.ศ.
+                                const yearInput = instance.currentYearElement;
+                                if(yearInput) {
+                                    yearInput.value = parseInt(yearInput.value) + 543;
+                                }
+                            },
+                            onYearChange: function(selectedDates, dateStr, instance) {
+                                // แปลงปีบนหัวปฏิทินเป็น พ.ศ. เมื่อมีการเปลี่ยนปี
+                                const yearInput = instance.currentYearElement;
+                                if(yearInput) {
+                                    yearInput.value = parseInt(yearInput.value) + 543;
+                                }
+                            },
+                            onChange: function(selectedDates, dateStr, instance) {
+                                input.form.submit();
+                            }
+                        });
+                        
+                        // ปรับปีให้เป็น พ.ศ. (ต้องทำหลังจากให้ค่าลงไปแล้ว)
+                        setTimeout(() => {
+                           if(input.value) {
+                             const dateParts = input.value.split('-');
+                             if(dateParts.length === 3) {
+                               const y = parseInt(dateParts[0]) + 543;
+                               input.value = `${dateParts[2]}/${dateParts[1]}/${y}`;
+                             }
+                           }
+                        }, 50);
+                    });
+                </script>
             <?php elseif ($filter == 'yearly'): ?>
                 <select name="year" class="form-control" style="width: auto; padding: 5px 10px;" onchange="this.form.submit()">
                     <?php 
@@ -34,12 +88,114 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
                     <?php endfor; ?>
                 </select>
             <?php elseif ($filter == 'custom'): ?>
-                <input type="date" name="start_date" value="<?= htmlspecialchars($start_date_custom) ?>" class="form-control" style="width: auto; padding: 5px 10px;">
+                <input type="text" name="start_date" id="thaiDateStart" value="<?= htmlspecialchars($start_date_custom) ?>" class="form-control" style="width: 120px; padding: 5px 10px; cursor: pointer; text-align: center;" readonly placeholder="วันเริ่มต้น">
                 <span>ถึง</span>
-                <input type="date" name="end_date" value="<?= htmlspecialchars($end_date_custom) ?>" class="form-control" style="width: auto; padding: 5px 10px;">
+                <input type="text" name="end_date" id="thaiDateEnd" value="<?= htmlspecialchars($end_date_custom) ?>" class="form-control" style="width: 120px; padding: 5px 10px; cursor: pointer; text-align: center;" readonly placeholder="วันสิ้นสุด">
                 <button type="submit" class="btn-filter" style="padding: 5px 15px; background: #16a34a; color: white; border: none;">ค้นหา</button>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const startInput = document.getElementById('thaiDateStart');
+                        const endInput = document.getElementById('thaiDateEnd');
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const startSelected = urlParams.get('start_date') || startInput.value;
+                        const endSelected = urlParams.get('end_date') || endInput.value;
+
+                        function adjustYearToThai(instance) {
+                            const yearInput = instance.currentYearElement;
+                            if(yearInput) {
+                                yearInput.value = parseInt(instance.currentYear) + 543;
+                            }
+                        }
+
+                        flatpickr(startInput, {
+                            locale: "th",
+                            dateFormat: "Y-m-d",
+                            defaultDate: startSelected,
+                            onReady: function(selectedDates, dateStr, instance) { adjustYearToThai(instance); },
+                            onYearChange: function(selectedDates, dateStr, instance) { adjustYearToThai(instance); }
+                        });
+                        
+                        flatpickr(endInput, {
+                            locale: "th",
+                            dateFormat: "Y-m-d",
+                            defaultDate: endSelected,
+                            onReady: function(selectedDates, dateStr, instance) { adjustYearToThai(instance); },
+                            onYearChange: function(selectedDates, dateStr, instance) { adjustYearToThai(instance); }
+                        });
+
+                        // ปรับปีจาก YYYY-MM-DD เป็น DD/MM/พ.ศ. หรือรูปแบบอื่นๆ ให้อ่านง่าย
+                        setTimeout(() => {
+                           [startInput, endInput].forEach(inp => {
+                               if(inp.value) {
+                                 const dateParts = inp.value.split('-');
+                                 if(dateParts.length === 3) {
+                                   const y = parseInt(dateParts[0]) + 543;
+                                   inp.value = `${dateParts[2]}/${dateParts[1]}/${y}`;
+                                 }
+                               }
+                           });
+                        }, 50);
+                    });
+                </script>
             <?php else: // monthly ?>
-                <input type="month" name="month" value="<?= htmlspecialchars($selected_month) ?>" class="form-control" style="width: auto; padding: 5px 10px;" onchange="this.form.submit()">
+                <input type="text" name="month" id="thaiMonthPicker" value="<?= htmlspecialchars($selected_month) ?>" class="form-control" style="width: 150px; padding: 5px 10px; cursor: pointer; text-align: center;" readonly placeholder="คลิกเพื่อเลือกเดือน">
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const input = document.getElementById('thaiMonthPicker');
+                        if (!input) return; // Prevent error if element not found
+                        
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const selectedMonth = urlParams.get('month') || input.value;
+
+                        flatpickr(input, {
+                            locale: "th",
+                            plugins: [
+                                new monthSelectPlugin({
+                                  shorthand: false, // ใช้ชื่อเดือนเต็ม
+                                  dateFormat: "Y-m", // ค่าที่จะส่งไปยัง server
+                                  altFormat: "F Y", // รูปแบบที่จะแสดงบนหน้าจอ (แต่เราจะปรับปีเป็น พ.ศ. อีกที)
+                                  theme: "light" 
+                                })
+                            ],
+                            defaultDate: selectedMonth || "today",
+                            onReady: function(selectedDates, dateStr, instance) {
+                                // ปรับตัวเลขปีใน Popup สำหรับรายเดือนให้เป็น พ.ศ.
+                                const yearInput = instance.currentYearElement;
+                                if(yearInput) {
+                                    yearInput.value = parseInt(instance.currentYear) + 543;
+                                }
+                            },
+                            onYearChange: function(selectedDates, dateStr, instance) {
+                                const yearInput = instance.currentYearElement;
+                                if(yearInput) {
+                                    yearInput.value = parseInt(instance.currentYear) + 543;
+                                }
+                            },
+                            onChange: function(selectedDates, dateStr, instance) {
+                                input.form.submit();
+                            }
+                        });
+                        
+                        // ปรับปีและเดือนให้เป็นภาษาไทยและ พ.ศ. บนช่องกรอก
+                        setTimeout(() => {
+                           if(input.value) {
+                             const dateParts = input.value.split('-');
+                             if(dateParts.length >= 2) {
+                               const y = parseInt(dateParts[0]) + 543;
+                               const mNum = dateParts[1];
+                               const thaiMonths = {
+                                   '01':'มกราคม','02':'กุมภาพันธ์','03':'มีนาคม',
+                                   '04':'เมษายน','05':'พฤษภาคม','06':'มิถุนายน',
+                                   '07':'กรกฎาคม','08':'สิงหาคม','09':'กันยายน',
+                                   '10':'ตุลาคม','11':'พฤศจิกายน','12':'ธันวาคม'
+                               };
+                               input.value = `${thaiMonths[mNum]} ${y}`;
+                             }
+                           }
+                        }, 50);
+                    });
+                </script>
             <?php endif; ?>
         </form>
 
@@ -157,7 +313,7 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
                         <?php endif; ?>
                     </div>
                     <div class="v-bar-label" style="font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;">
-                        <?= $row['label'] ?>
+                        <?= strtr($row['label'], $monthMap) ?>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -204,7 +360,7 @@ $currentFilterName = $filterMap[$filter] ?? 'รายเดือน';
                         <?php foreach (array_reverse($reportData) as $row): // กลับด้านให้ล่าสุดอยู่บน 
                         ?>
                             <tr>
-                                <td><?= $row['label'] ?></td>
+                                <td><?= strtr($row['label'], $monthMap) ?></td>
                                 <td style="text-align:right; color:#3b82f6;"><?= number_format($row['course']) ?></td>
                                 <td style="text-align:right; color:#10b981;"><?= number_format($row['product']) ?></td>
                                 <td style="text-align:right; font-weight:bold;"><?= number_format($row['total']) ?></td>

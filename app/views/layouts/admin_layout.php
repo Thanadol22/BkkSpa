@@ -10,11 +10,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link rel="stylesheet" href="assets/css/admin.css">
+
+    <!-- Flatpickr สำหรับปฏิทินภาษาไทย -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
 </head>
 <body>
     <div class="app-wrapper">
+        <div class="admin-mobile-header">
+            <h3>BSA Admin</h3>
+            <i class="fas fa-bars admin-menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('active')" style="cursor: pointer; padding: 10px;"></i>
+        </div>
         
-        <aside class="sidebar">
+        <aside class="sidebar admin-sidebar-container" onclick="/* ปิดเมนูเมื่อคลิกพื้นหลัง */ if(window.innerWidth <= 992 && !event.target.closest('.sidebar-content')) this.classList.remove('active')">
+            <div class="sidebar-content">
             <div class="sidebar-header">
                 <h3>Bangkok Spa Academy</h3>
                 <span class="role-badge">ระบบผู้ดูแลระบบ</span>

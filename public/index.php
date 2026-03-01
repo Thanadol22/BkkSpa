@@ -804,18 +804,25 @@ switch ($action) {
         $refunds = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // คำนวณราคาสุทธิ (หักส่วนลด)
+        require_once APP_PATH . '/models/Promotion.php';
+        $promoModel = new Promotion($pdo);
+
         foreach ($refunds as &$row) {
-            $originalPrice = $row['original_price'];
-            $paidAmount = $row['paid_amount'] ?? $originalPrice;
+            $bookingDate = $row['booked_at'];
+            $courseId = $row['course_id'];
+            
+            // หาโปรโมชั่น ณ วันที่ลูกค้ากดจอง (ไม่สนใจว่าตอนนี้โปรจะหมดอายุหรือปิดไปแล้ว)
+            $activePromo = $promoModel->getPromotionAtDate($courseId, $bookingDate);
             
             // ค่าเริ่มต้น
             $row['discount_percent'] = 0;
             $row['discount_amount'] = 0;
-            $row['net_price'] = $paidAmount;
+            $row['net_price'] = $row['paid_amount'] ?? $row['original_price'];
 
-            if ($originalPrice > 0 && $paidAmount < $originalPrice) {
-                $row['discount_amount'] = $originalPrice - $paidAmount;
-                $row['discount_percent'] = round(($row['discount_amount'] / $originalPrice) * 100);
+            if ($activePromo) {
+                $row['discount_percent'] = intval($activePromo['discount']);
+                $row['discount_amount'] = ($row['original_price'] * $activePromo['discount']) / 100;
+                $row['net_price'] = $row['original_price'] - $row['discount_amount'];
             }
         }
         unset($row); // ป้องกันบั๊ก loop reference

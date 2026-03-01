@@ -60,7 +60,12 @@
     ?>
 
     <div class="staff-wrapper">
-        <aside class="staff-sidebar">
+        <div class="staff-mobile-header">
+            <h3>BSA Staff</h3>
+            <i class="fas fa-bars staff-menu-toggle" onclick="document.querySelector('.staff-sidebar').classList.toggle('active')" style="cursor: pointer; padding: 10px;"></i>
+        </div>
+        <aside class="staff-sidebar" onclick="if(window.innerWidth <= 992 && !event.target.closest('.staff-sidebar-content')) this.classList.remove('active')">
+            <div class="staff-sidebar-content">
             <div class="sidebar-header">
                 <h3>Bangkok Spa Academy</h3>
                 <span class="role-badge"><?= htmlspecialchars($_SESSION['full_name'] ?? 'พนักงาน') ?></span>
@@ -139,6 +144,7 @@
                     </li>
                 </ul>
             </div>
+            </div> <!-- End staff-sidebar-content -->
         </aside>
 
         <main class="staff-content">

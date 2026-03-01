@@ -1,3 +1,15 @@
+<?php 
+$monthMap = [
+    'January' => 'มกราคม', 'February' => 'กุมภาพันธ์', 'March' => 'มีนาคม',
+    'April' => 'เมษายน', 'May' => 'พฤษภาคม', 'June' => 'มิถุนายน',
+    'July' => 'กรกฎาคม', 'August' => 'สิงหาคม', 'September' => 'กันยายน',
+    'October' => 'ตุลาคม', 'November' => 'พฤศจิกายน', 'December' => 'ธันวาคม',
+    'Jan' => 'ม.ค.', 'Feb' => 'ก.พ.', 'Mar' => 'มี.ค.',
+    'Apr' => 'เม.ย.', 'Jun' => 'มิ.ย.', 'Jul' => 'ก.ค.', 
+    'Aug' => 'ส.ค.', 'Sep' => 'ก.ย.', 'Oct' => 'ต.ค.', 
+    'Nov' => 'พ.ย.', 'Dec' => 'ธ.ค.'
+];
+?>
 <!DOCTYPE html>
 <html lang="th">
 
@@ -191,7 +203,7 @@
     <div class="header-pdf">
         <h1 style="margin:0; font-size:24px;">รายงานสรุปรายได้</h1>
         <p style="margin:5px 0;">Bangkok Spa Academy</p>
-        <p style="margin:5px 0; font-size:14px; color:#666;">ข้อมูล ณ วันที่: <?= date('d/m/Y H:i') ?></p>
+        <p style="margin:5px 0; font-size:14px; color:#666;">ข้อมูล ณ วันที่: <?= date('d') ?> <?= $monthMap[date('F')] ?> <?= date('Y') + 543 ?> เวลา <?= date('H:i') ?> น.</p>
         <p style="margin:5px 0; font-size:14px; color:#16a34a; font-weight:bold;">
             รูปแบบรายงาน: <?= isset($_GET['filter']) && $_GET['filter'] == 'daily' ? 'รายวัน' : (isset($_GET['filter']) && $_GET['filter'] == 'yearly' ? 'รายปี' : 'รายเดือน') ?>
         </p>
@@ -341,7 +353,7 @@
                 <?php else: ?>
                     <?php foreach (array_reverse($reportData) as $row): ?>
                         <tr>
-                            <td><?= $row['label'] ?></td>
+                            <td><?= strtr($row['label'], $monthMap) ?></td>
                             <td class="text-right"><?= number_format($row['course']) ?></td>
                             <td class="text-right"><?= number_format($row['product']) ?></td>
                             <td class="text-right font-bold"><?= number_format($row['total']) ?></td>
