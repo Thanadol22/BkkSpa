@@ -3122,6 +3122,26 @@ switch ($action) {
         } elseif ($filter == 'custom') {
             $startDate = $start_date_custom;
             $endDate = $end_date_custom;
+
+            // ฟังก์ชันแปลงวันที่จาก d/m/Y (พ.ศ.) เป็น Y-m-d (ค.ศ.)
+            $convertThaiDate = function($date) {
+                if (strpos($date, '/') !== false) {
+                    $parts = explode('/', $date);
+                    if (count($parts) === 3) {
+                        $y = (int)$parts[2];
+                        $m = (int)$parts[1];
+                        $d = (int)$parts[0];
+                        // ถ้าปี > 2400 อนุมานว่าเป็น พ.ศ.
+                        if ($y > 2400) $y -= 543;
+                        return sprintf('%04d-%02d-%02d', $y, $m, $d);
+                    }
+                }
+                return $date;
+            };
+
+            $startDate = $convertThaiDate($startDate);
+            $endDate = $convertThaiDate($endDate);
+
             $sqlDateFormat = "%Y-%m-%d";
             
             $begin = new DateTime($startDate);

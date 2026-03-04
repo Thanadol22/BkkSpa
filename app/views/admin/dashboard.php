@@ -1,3 +1,15 @@
+<?php
+$monthMap = [
+    'January' => 'มกราคม', 'February' => 'กุมภาพันธ์', 'March' => 'มีนาคม',
+    'April' => 'เมษายน', 'May' => 'พฤษภาคม', 'June' => 'มิถุนายน',
+    'July' => 'กรกฎาคม', 'August' => 'สิงหาคม', 'September' => 'กันยายน',
+    'October' => 'ตุลาคม', 'November' => 'พฤศจิกายน', 'December' => 'ธันวาคม',
+    'Jan' => 'ม.ค.', 'Feb' => 'ก.พ.', 'Mar' => 'มี.ค.',
+    'Apr' => 'เม.ย.', 'Jun' => 'มิ.ย.', 'Jul' => 'ก.ค.', 
+    'Aug' => 'ส.ค.', 'Sep' => 'ก.ย.', 'Oct' => 'ต.ค.', 
+    'Nov' => 'พ.ย.', 'Dec' => 'ธ.ค.'
+];
+?>
 <div class="dashboard-stats-grid">
     <div class="stat-card card-border-primary">
         <div class="stat-content">
@@ -93,7 +105,7 @@
                 <?php endif; ?>
             </div>
             <div class="v-bar-label" style="font-size:12px; color:#666; margin-top:10px;">
-                <?= $d['label'] ?>
+                <?= strtr($d['label'], $monthMap) ?>
             </div>
         </div>
         <?php endforeach; ?>

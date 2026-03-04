@@ -47,35 +47,10 @@ $monthMap = [
                             locale: "th",
                             dateFormat: "Y-m-d",
                             defaultDate: selectedDate || "today",
-                            onReady: function(selectedDates, dateStr, instance) {
-                                // แปลงปีบนหัวปฏิทินเป็น พ.ศ.
-                                const yearInput = instance.currentYearElement;
-                                if(yearInput) {
-                                    yearInput.value = parseInt(yearInput.value) + 543;
-                                }
-                            },
-                            onYearChange: function(selectedDates, dateStr, instance) {
-                                // แปลงปีบนหัวปฏิทินเป็น พ.ศ. เมื่อมีการเปลี่ยนปี
-                                const yearInput = instance.currentYearElement;
-                                if(yearInput) {
-                                    yearInput.value = parseInt(yearInput.value) + 543;
-                                }
-                            },
                             onChange: function(selectedDates, dateStr, instance) {
                                 input.form.submit();
                             }
                         });
-                        
-                        // ปรับปีให้เป็น พ.ศ. (ต้องทำหลังจากให้ค่าลงไปแล้ว)
-                        setTimeout(() => {
-                           if(input.value) {
-                             const dateParts = input.value.split('-');
-                             if(dateParts.length === 3) {
-                               const y = parseInt(dateParts[0]) + 543;
-                               input.value = `${dateParts[2]}/${dateParts[1]}/${y}`;
-                             }
-                           }
-                        }, 50);
                     });
                 </script>
             <?php elseif ($filter == 'yearly'): ?>
@@ -84,7 +59,7 @@ $monthMap = [
                     $currentYear = date('Y');
                     for($y = $currentYear; $y >= $currentYear - 5; $y--): 
                     ?>
-                        <option value="<?= $y ?>" <?= ($selected_year == $y) ? 'selected' : '' ?>><?= $y + 543 ?></option>
+                        <option value="<?= $y ?>" <?= ($selected_year == $y) ? 'selected' : '' ?>><?= $y ?></option>
                     <?php endfor; ?>
                 </select>
             <?php elseif ($filter == 'custom'): ?>
@@ -98,44 +73,20 @@ $monthMap = [
                         const startInput = document.getElementById('thaiDateStart');
                         const endInput = document.getElementById('thaiDateEnd');
                         const urlParams = new URLSearchParams(window.location.search);
-                        const startSelected = urlParams.get('start_date') || startInput.value;
-                        const endSelected = urlParams.get('end_date') || endInput.value;
-
-                        function adjustYearToThai(instance) {
-                            const yearInput = instance.currentYearElement;
-                            if(yearInput) {
-                                yearInput.value = parseInt(instance.currentYear) + 543;
-                            }
-                        }
+                        let startSelected = urlParams.get('start_date') || startInput.value;
+                        let endSelected = urlParams.get('end_date') || endInput.value;
 
                         flatpickr(startInput, {
                             locale: "th",
                             dateFormat: "Y-m-d",
-                            defaultDate: startSelected,
-                            onReady: function(selectedDates, dateStr, instance) { adjustYearToThai(instance); },
-                            onYearChange: function(selectedDates, dateStr, instance) { adjustYearToThai(instance); }
+                            defaultDate: startSelected
                         });
                         
                         flatpickr(endInput, {
                             locale: "th",
                             dateFormat: "Y-m-d",
-                            defaultDate: endSelected,
-                            onReady: function(selectedDates, dateStr, instance) { adjustYearToThai(instance); },
-                            onYearChange: function(selectedDates, dateStr, instance) { adjustYearToThai(instance); }
+                            defaultDate: endSelected
                         });
-
-                        // ปรับปีจาก YYYY-MM-DD เป็น DD/MM/พ.ศ. หรือรูปแบบอื่นๆ ให้อ่านง่าย
-                        setTimeout(() => {
-                           [startInput, endInput].forEach(inp => {
-                               if(inp.value) {
-                                 const dateParts = inp.value.split('-');
-                                 if(dateParts.length === 3) {
-                                   const y = parseInt(dateParts[0]) + 543;
-                                   inp.value = `${dateParts[2]}/${dateParts[1]}/${y}`;
-                                 }
-                               }
-                           });
-                        }, 50);
                     });
                 </script>
             <?php else: // monthly ?>
@@ -154,46 +105,15 @@ $monthMap = [
                                 new monthSelectPlugin({
                                   shorthand: false, // ใช้ชื่อเดือนเต็ม
                                   dateFormat: "Y-m", // ค่าที่จะส่งไปยัง server
-                                  altFormat: "F Y", // รูปแบบที่จะแสดงบนหน้าจอ (แต่เราจะปรับปีเป็น พ.ศ. อีกที)
+                                  altFormat: "F Y", // รูปแบบที่จะแสดงบนหน้าจอ
                                   theme: "light" 
                                 })
                             ],
                             defaultDate: selectedMonth || "today",
-                            onReady: function(selectedDates, dateStr, instance) {
-                                // ปรับตัวเลขปีใน Popup สำหรับรายเดือนให้เป็น พ.ศ.
-                                const yearInput = instance.currentYearElement;
-                                if(yearInput) {
-                                    yearInput.value = parseInt(instance.currentYear) + 543;
-                                }
-                            },
-                            onYearChange: function(selectedDates, dateStr, instance) {
-                                const yearInput = instance.currentYearElement;
-                                if(yearInput) {
-                                    yearInput.value = parseInt(instance.currentYear) + 543;
-                                }
-                            },
                             onChange: function(selectedDates, dateStr, instance) {
                                 input.form.submit();
                             }
                         });
-                        
-                        // ปรับปีและเดือนให้เป็นภาษาไทยและ พ.ศ. บนช่องกรอก
-                        setTimeout(() => {
-                           if(input.value) {
-                             const dateParts = input.value.split('-');
-                             if(dateParts.length >= 2) {
-                               const y = parseInt(dateParts[0]) + 543;
-                               const mNum = dateParts[1];
-                               const thaiMonths = {
-                                   '01':'มกราคม','02':'กุมภาพันธ์','03':'มีนาคม',
-                                   '04':'เมษายน','05':'พฤษภาคม','06':'มิถุนายน',
-                                   '07':'กรกฎาคม','08':'สิงหาคม','09':'กันยายน',
-                                   '10':'ตุลาคม','11':'พฤศจิกายน','12':'ธันวาคม'
-                               };
-                               input.value = `${thaiMonths[mNum]} ${y}`;
-                             }
-                           }
-                        }, 50);
                     });
                 </script>
             <?php endif; ?>
@@ -341,7 +261,7 @@ $monthMap = [
         <div class="report-card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <h3 class="report-card-title" style="margin:0;">ตารางรายละเอียด</h3>
-                <a href="index.php?action=admin_report_pdf&filter=<?= $filter ?>&date=<?= $selected_date ?>&month=<?= $selected_month ?>&year=<?= $selected_year ?>" target="_blank" class="btn-filter" style="font-size:12px; padding:5px 10px; border:1px solid #ddd;">
+                <a href="index.php?action=admin_report_pdf&filter=<?= $filter ?>&date=<?= $selected_date ?>&month=<?= $selected_month ?>&year=<?= $selected_year ?>&start_date=<?= $start_date_custom ?>&end_date=<?= $end_date_custom ?>" target="_blank" class="btn-filter" style="font-size:12px; padding:5px 10px; border:1px solid #ddd;">
                     <i class="fas fa-print"></i> พิมพ์ PDF
                 </a>
             </div>
