@@ -276,7 +276,7 @@ switch ($action) {
                 FROM course c
                 LEFT JOIN promotion_course p ON c.course_id = p.course_id 
                     AND p.visible = 1 
-                    AND CURDATE() BETWEEN DATE(p.start_at) AND DATE(p.end_at)
+                    AND NOW() BETWEEN p.start_at AND p.end_at
                 WHERE c.is_active = 1 
                 GROUP BY c.course_id
                 ORDER BY c.course_type DESC, c.course_id ASC";
@@ -328,7 +328,7 @@ switch ($action) {
                     FROM course c 
                     LEFT JOIN promotion_course p ON c.course_id = p.course_id 
                         AND p.visible = 1 
-                        AND CURDATE() BETWEEN DATE(p.start_at) AND DATE(p.end_at)
+                        AND NOW() BETWEEN p.start_at AND p.end_at
                     WHERE c.course_id = ? AND c.is_active = 1
                     GROUP BY c.course_id";
             $stmt = $pdo->prepare($sql);
@@ -1304,21 +1304,23 @@ switch ($action) {
         exit;
         break;
 
-    // 3. ลบสมาชิก (โดยการ Delete)
-    case 'staff_member_delete':
+    // 3. เปลี่ยนสถานะสมาชิก (Activate/Deactivate) แทนการลบ
+    case 'staff_member_toggle_status':
         if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
             header('Location: index.php?action=login');
             exit;
         }
 
         $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+        $status = isset($_GET['status']) ? intval($_GET['status']) : 0;
 
-        // ลบข้อมูล (Role 3 เท่านั้น เพื่อความปลอดภัย)
-        $stmt = $pdo->prepare("DELETE FROM user WHERE user_id = ? AND role_id = 3");
-        if ($stmt->execute([$id])) {
-            echo "<script>alert('ลบสมาชิกเรียบร้อยแล้ว'); window.location='index.php?action=staff_members';</script>";
+        // อัปเดตสถานะ is_active (Role 3 เท่านั้น เพื่อความปลอดภัย)
+        $stmt = $pdo->prepare("UPDATE user SET is_active = ? WHERE user_id = ? AND role_id = 3");
+        if ($stmt->execute([$status, $id])) {
+            $msg = ($status == 1) ? 'เปิดใช้งานสมาชิกเรียบร้อยแล้ว' : 'ปิดใช้งานสมาชิกเรียบร้อยแล้ว';
+            echo "<script>alert('$msg'); window.location='index.php?action=staff_members';</script>";
         } else {
-            echo "<script>alert('เกิดข้อผิดพลาดในการลบ'); window.location='index.php?action=staff_members';</script>";
+            echo "<script>alert('เกิดข้อผิดพลาดในการเปลี่ยนสถานะ'); window.location='index.php?action=staff_members';</script>";
         }
         exit;
         break;
@@ -1487,8 +1489,19 @@ switch ($action) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $course_id = $_POST['course_id'];
             $start_at = $_POST['start_at'];
-            $end_at = $_POST['end_at'];
             $capacity = $_POST['capacity'];
+
+            // ดึงจำนวนวันเรียนของคอร์ส เพื่อคำนวณวันสิ้นสุด
+            $stmt = $pdo->prepare("SELECT duration_day FROM course WHERE course_id = ?");
+            $stmt->execute([$course_id]);
+            $duration_day = $stmt->fetchColumn();
+            
+            // คำนวณวันสิ้นสุด (เริ่มเรียนนับเป็น 1 วัน ดังนั้นบวกเพิ่ม duration_day - 1 วัน)
+            if ($duration_day > 0) {
+                $end_at = date('Y-m-d', strtotime($start_at . ' + ' . ($duration_day - 1) . ' days'));
+            } else {
+                $end_at = $start_at;
+            }
 
             // อัปเดตรูปภาพปกคอร์ส (ถ้ามีการแนบมา)
             if (!empty($_FILES['course_picture']['name'])) {
@@ -1913,7 +1926,7 @@ switch ($action) {
 
         require_once APP_PATH . '/models/Product.php';
         $productModel = new Product($pdo);
-        $products = $productModel->getActiveProducts();
+        $products = $productModel->getAllProducts();
 
 
         $content_view = VIEW_PATH . '/staff/products/list.php';
@@ -2076,6 +2089,23 @@ switch ($action) {
             $productModel->updateProduct($id, $data);
             header('Location: index.php?action=staff_product_list');
         }
+        break;
+
+    // 5. ปิดการใช้งานสินค้า (Soft Delete)
+    case 'staff_product_delete':
+        if (!isset($_SESSION['role_id']) || !in_array($_SESSION['role_id'], [1, 2])) {
+            header('Location: index.php?action=login');
+            exit;
+        }
+
+        $id = $_GET['id'] ?? 0;
+        if ($id > 0) {
+            $pdo->prepare("UPDATE product SET is_active = 0 WHERE product_id = ?")->execute([$id]);
+            echo "<script>alert('ปิดการใช้งานสินค้าเรียบร้อยแล้ว'); window.location='index.php?action=staff_product_list';</script>";
+        } else {
+            header('Location: index.php?action=staff_product_list');
+        }
+        exit;
         break;
 
     // =============================================

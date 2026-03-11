@@ -82,11 +82,13 @@
                                     <i class="fas fa-edit" style="color: #FFC107;"></i>
                                 </a>
 
+                                <?php if ($p['is_active'] != 0): ?>
                                 <a href="index.php?action=staff_product_delete&id=<?= $p['product_id'] ?>" 
-                                   class="btn-icon" title="ลบ"
-                                   onclick="return confirm('ยืนยันการลบสินค้า?');">
+                                   class="btn-icon" title="ปิดการใช้งาน"
+                                   onclick="return confirm('ยืนยันการปิดการใช้งานสินค้า?');">
                                     <i class="fas fa-trash-alt" style="color: #dc3545;"></i>
                                 </a>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

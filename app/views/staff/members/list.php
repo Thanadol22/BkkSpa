@@ -46,12 +46,21 @@
                             <a href="index.php?action=staff_member_edit&id=<?= $m['user_id'] ?>" class="btn-quick-gray" style="padding: 5px 10px; font-size: 12px;">
                                 <i class="fas fa-edit"></i> แก้ไข
                             </a>
-                            <a href="index.php?action=staff_member_delete&id=<?= $m['user_id'] ?>" 
-                               class="btn-quick-gray" 
-                               style="padding: 5px 10px; font-size: 12px; color: #dc3545; border-color: #dc3545;"
-                               onclick="return confirm('คุณแน่ใจหรือไม่ที่จะลบสมาชิกคนนี้? ข้อมูลการจองทั้งหมดจะหายไปด้วย');">
-                                <i class="fas fa-trash-alt"></i> ลบ
-                            </a>
+                            <?php if ($m['is_active'] == 1): ?>
+                                <a href="index.php?action=staff_member_toggle_status&id=<?= $m['user_id'] ?>&status=0" 
+                                   class="btn-quick-gray" 
+                                   style="padding: 5px 10px; font-size: 12px; color: #dc3545; border-color: #dc3545;"
+                                   onclick="return confirm('ยืนยันการปิดใช้งานบัญชีสมาชิกนี้?');">
+                                    <i class="fas fa-ban"></i> ปิดใช้งาน
+                                </a>
+                            <?php else: ?>
+                                <a href="index.php?action=staff_member_toggle_status&id=<?= $m['user_id'] ?>&status=1" 
+                                   class="btn-quick-gray" 
+                                   style="padding: 5px 10px; font-size: 12px; color: #28a745; border-color: #28a745;"
+                                   onclick="return confirm('ยืนยันการเปิดใช้งานบัญชีสมาชิกนี้?');">
+                                    <i class="fas fa-check-circle"></i> เปิดใช้งาน
+                                </a>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>

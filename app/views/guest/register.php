@@ -60,7 +60,7 @@
                         <div class="form-group">
                             <label class="form-label">เลขที่บัญชี</label>
                             <input type="text" name="bank_account" class="input-field" placeholder="XXX-X-XXXXX-X"
-                                   oninput="formatBankAccount(this)" maxlength="19">
+                                   oninput="formatBankAccount(this)" maxlength="15">
                         </div>
                     </div>
 

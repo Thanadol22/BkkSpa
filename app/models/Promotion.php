@@ -206,7 +206,7 @@ class Promotion {
     public function getPromotionAtDate($course_id, $date) {
         $sql = "SELECT * FROM promotion_course 
                 WHERE course_id = :course_id 
-                  AND DATE(:date) BETWEEN DATE(start_at) AND DATE(end_at)
+                  AND :date BETWEEN start_at AND end_at
                 ORDER BY discount DESC 
                 LIMIT 1";
         $stmt = $this->db->prepare($sql);

@@ -41,7 +41,7 @@
                             <button type="button" 
                                     class="btn-icon" 
                                     title="เปิดรอบเรียนใหม่"
-                                    onclick="openScheduleModal(<?= $c['course_id'] ?>, '<?= htmlspecialchars($c['name']) ?>')">
+                                    onclick="openScheduleModal(<?= $c['course_id'] ?>, '<?= htmlspecialchars($c['name']) ?>', <?= $c['duration_day'] ?>)">
                                 <i class="fas fa-calendar-plus" style="color: var(--primary-green);"></i>
                             </button>
 
@@ -94,11 +94,11 @@
                         <div class="date-input-group">
                             <div class="date-row">
                                 <label>วันที่เริ่มเรียน (Start Date)</label>
-                                <input type="date" name="start_at" class="custom-date-input" required>
+                                <input type="date" name="start_at" id="modal_start_at" class="custom-date-input" required onchange="calculateModalEndDate()">
                             </div>
                             <div class="date-row">
-                                <label>วันที่สิ้นสุด (End Date)</label>
-                                <input type="date" name="end_at" class="custom-date-input" required>
+                                <label>วันที่สิ้นสุด (ประเมิน)</label>
+                                <input type="date" id="modal_end_at" class="custom-date-input" disabled style="background-color: #f5f5f5;">
                             </div>
                         </div>
                     </div>
@@ -124,10 +124,36 @@
 <script>
     const modal = document.getElementById('scheduleModal');
 
-    function openScheduleModal(id, name) {
+    let currentDurationDay = 0;
+
+    function openScheduleModal(id, name, duration_day) {
         document.getElementById('modal_course_id').value = id;
         document.getElementById('modal_course_name').innerText = name;
+        currentDurationDay = parseInt(duration_day) || 0;
+        document.getElementById('modal_start_at').value = '';
+        
+        let endInput = document.getElementById('modal_end_at');
+        if(endInput) endInput.value = '';
+        
         modal.classList.add('show'); // แสดง Modal
+    }
+
+    function calculateModalEndDate() {
+        const startInput = document.getElementById('modal_start_at').value;
+        const endInput = document.getElementById('modal_end_at');
+        
+        if (startInput && currentDurationDay > 0) {
+            const startDate = new Date(startInput);
+            startDate.setDate(startDate.getDate() + (currentDurationDay - 1));
+            
+            const year = startDate.getFullYear();
+            const month = String(startDate.getMonth() + 1).padStart(2, '0');
+            const date = String(startDate.getDate()).padStart(2, '0');
+            
+            endInput.value = `${year}-${month}-${date}`;
+        } else {
+            endInput.value = '';
+        }
     }
 
     function closeScheduleModal() {

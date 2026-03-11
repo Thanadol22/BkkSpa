@@ -12,11 +12,11 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div class="form-group">
                 <label class="form-label">วันที่เริ่มเรียน</label>
-                <input type="date" name="start_at" class="form-input" required>
+                <input type="date" name="start_at" id="page_start_at" class="form-input" required onchange="calculatePageEndDate()">
             </div>
             <div class="form-group">
-                <label class="form-label">วันที่สิ้นสุด</label>
-                <input type="date" name="end_at" class="form-input" required>
+                <label class="form-label">วันที่สิ้นสุด (ประเมิน)</label>
+                <input type="date" id="page_end_at" class="form-input" disabled style="background-color: #f5f5f5; color: #888;">
             </div>
         </div>
 
@@ -52,6 +52,26 @@
     </form>
 </div>
 <script>
+const courseDuration = <?= intval($course['duration_day'] ?? 0) ?>;
+
+function calculatePageEndDate() {
+    const startInput = document.getElementById('page_start_at').value;
+    const endInput = document.getElementById('page_end_at');
+    
+    if (startInput && courseDuration > 0) {
+        const startDate = new Date(startInput);
+        startDate.setDate(startDate.getDate() + (courseDuration - 1));
+        
+        const year = startDate.getFullYear();
+        const month = String(startDate.getMonth() + 1).padStart(2, '0');
+        const date = String(startDate.getDate()).padStart(2, '0');
+        
+        endInput.value = `${year}-${month}-${date}`;
+    } else {
+        endInput.value = '';
+    }
+}
+
 function previewImage(input) {
     if (input.files && input.files[0]) {
         var reader = new FileReader();
