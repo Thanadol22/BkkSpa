@@ -646,7 +646,7 @@ switch ($action) {
                 <p>ธนาคาร: {$booking['bank_name']}</p>
                 <p>เลขบัญชี: {$booking['bank_account']}</p>
                 <br>
-                <p><a href='http://localhost/BangkokSpa/index.php?action=staff_refund_list'>คลิกเพื่อตรวจสอบรายการ</a></p>
+                <p><a href='{$_ENV['BASE_URL']}/index.php?action=staff_refund_list'>คลิกเพื่อตรวจสอบรายการ</a></p>
             ";
 
             // 4. [ส่วนที่แก้ไข] ดึงอีเมลพนักงานทุกคน (Role=2, Active=1) และวนลูปส่ง

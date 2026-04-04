@@ -41,7 +41,7 @@ if ($schedule) {
             <div class="booking-left">
                 <p class="qr-label">กรุณาชำระเงิน</p>
                 <div class="qr-wrapper">
-                    <img src="assets/images/courses/payment.jpg" alt="QR Code" class="qr-code-img">
+                    <img src="<?= $_ENV['QR_CODE_IMAGE'] ?? 'assets/images/courses/payment.jpg' ?>" alt="QR Code" class="qr-code-img">
                 </div>
                 <p class="qr-merchant-name">สถาบันวิชาชีพสปา กรุงเทพ</p>
             </div>
